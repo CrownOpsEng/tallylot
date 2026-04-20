@@ -37,15 +37,22 @@ from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.captures import CaptureMetadata
 from tallylot.ports.claim_sets import ClaimSetRepositoryPort
+from tallylot.ports.checkpoints import CheckpointRepositoryPort
 from tallylot.ports.evidence import EvidenceRepositoryPort, LocationInventoryRecord
+from tallylot.ports.economic_facts import EconomicFactsRepositoryPort
 from tallylot.ports.evidence_sets import EvidenceSetRepositoryPort
 from tallylot.ports.facts import FactRepositoryPort
+from tallylot.ports.reconciliation_states import ReconciliationStateRepositoryPort
 from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 from .annotations import annotation_records_from_drafts, location_annotation_records
 from .artifacts import write_normalization_artifacts
+from .downstream_products import (
+    DownstreamProductDependencies,
+    build_downstream_normalization_products,
+)
 from .models import (
     NormalizationOutputs,
     NormalizationWindowStats,
@@ -68,6 +75,9 @@ class NormalizationDependencies:
     evidence: EvidenceRepositoryPort
     evidence_sets: EvidenceSetRepositoryPort
     claim_sets: ClaimSetRepositoryPort
+    economic_facts: EconomicFactsRepositoryPort
+    reconciliation_states: ReconciliationStateRepositoryPort
+    checkpoints: CheckpointRepositoryPort
     artifacts: ArtifactStorePort
     statement_extraction: StatementExtractionService | None = None
 
@@ -80,10 +90,21 @@ class NormalizeSourceUseCase:
         self._evidence = dependencies.evidence
         self._evidence_sets = dependencies.evidence_sets
         self._claim_sets = dependencies.claim_sets
+        self._economic_facts = dependencies.economic_facts
+        self._reconciliation_states = dependencies.reconciliation_states
+        self._checkpoints = dependencies.checkpoints
         self._artifacts = dependencies.artifacts
         self._statement_extraction = (
             dependencies.statement_extraction
             or StatementExtractionService(self._source_registry)
+        )
+        self._downstream_dependencies = DownstreamProductDependencies(
+            facts=self._facts,
+            evidence=self._evidence,
+            economic_facts=self._economic_facts,
+            reconciliation_states=self._reconciliation_states,
+            checkpoints=self._checkpoints,
+            artifacts=self._artifacts,
         )
 
     def execute(self, request: NormalizeRequest) -> NormalizeResponse:
@@ -209,6 +230,19 @@ class NormalizeSourceUseCase:
             reviews=review_records,
             location_inventory=result.location_inventory,
         )
+        downstream_products = build_downstream_normalization_products(
+            workspace_root=workspace_root,
+            translation_result=translation_result,
+            dependencies=self._downstream_dependencies,
+        )
+        if downstream_products.economic_facts_id:
+            outputs = replace(
+                outputs,
+                facts=downstream_products.facts,
+                fact_annotations=downstream_products.fact_annotations,
+                balance_snapshots=downstream_products.balance_snapshots,
+                balance_references=downstream_products.balance_references,
+            )
         write_normalization_artifacts(
             output_dir,
             facts=self._facts,
@@ -232,6 +266,12 @@ class NormalizeSourceUseCase:
                 evidence_set_ref=translation_result.evidence_set_ref,
                 claim_set_id=translation_result.claim_set_id,
                 claim_set_ref=translation_result.claim_set_ref,
+                economic_facts_id=downstream_products.economic_facts_id,
+                economic_facts_ref=downstream_products.economic_facts_ref,
+                reconciliation_state_ids=downstream_products.reconciliation_state_ids,
+                reconciliation_state_refs=downstream_products.reconciliation_state_refs,
+                checkpoint_ids=downstream_products.checkpoint_ids,
+                checkpoint_refs=downstream_products.checkpoint_refs,
             ),
         )
         append_capture_status_record(
@@ -253,8 +293,14 @@ class NormalizeSourceUseCase:
             evidence_set_ref=translation_result.evidence_set_ref,
             claim_set_id=translation_result.claim_set_id,
             claim_set_ref=translation_result.claim_set_ref,
+            economic_facts_id=downstream_products.economic_facts_id,
+            economic_facts_ref=downstream_products.economic_facts_ref,
+            reconciliation_state_ids=downstream_products.reconciliation_state_ids,
+            reconciliation_state_refs=downstream_products.reconciliation_state_refs,
+            checkpoint_ids=downstream_products.checkpoint_ids,
+            checkpoint_refs=downstream_products.checkpoint_refs,
             fact_count=len(facts),
-            balance_count=len(balance_snapshots),
+            balance_count=len(outputs.balance_snapshots),
             issue_count=len(outputs.issues),
             review_count=len(review_records),
             translation_candidate_count=translation_result.metrics.translation_candidate_count,

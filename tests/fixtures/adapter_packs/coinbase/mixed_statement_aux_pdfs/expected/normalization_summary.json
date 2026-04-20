@@ -1,7 +1,15 @@
 {
   "adapter_id": "coinbase",
+  "checkpoint_ids": [
+    "ed58f4682b75e3c294cf4e6cbabdf0d1b51e61811f66adc57b47b66fa9f5b8cd"
+  ],
+  "checkpoint_refs": [
+    "working/products/checkpoints/ed58f4682b75e3c294cf4e6cbabdf0d1b51e61811f66adc57b47b66fa9f5b8cd/checkpoint.json"
+  ],
   "claim_set_id": "coinbase:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:f84859432a1b4be7c8a1caaa15c66c0ad4ffac7d8be60747ca40670a6aa9a92a:coinbase:coinbase:claim",
   "claim_set_ref": "working/products/claim_sets/coinbase:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:f84859432a1b4be7c8a1caaa15c66c0ad4ffac7d8be60747ca40670a6aa9a92a:coinbase:coinbase:claim/claim_set.json",
+  "economic_facts_id": "d4bb883a6224a052e762ef44730bac8dc62836e97547f9867596aa41f2cc3fea",
+  "economic_facts_ref": "working/products/economic_facts/d4bb883a6224a052e762ef44730bac8dc62836e97547f9867596aa41f2cc3fea/economic_facts.json",
   "evidence_set_id": "coinbase:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:f84859432a1b4be7c8a1caaa15c66c0ad4ffac7d8be60747ca40670a6aa9a92a",
   "evidence_set_ref": "working/products/evidence_sets/coinbase:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:f84859432a1b4be7c8a1caaa15c66c0ad4ffac7d8be60747ca40670a6aa9a92a/evidence_set.json",
   "fact_count": 1,
@@ -11,7 +19,19 @@
   "location_count": 0,
   "normalization_window_end": "",
   "normalization_window_start": "",
-  "reference_count": 2,
+  "reconciliation_state_ids": [
+    "6aefd5764fb377139b1d72eecbe90dd836c29f86474d748b316d727c819f9dc1",
+    "9516b02c92b07d70ffc43ba7108a5d5ef87bd86bc162342cea9b2a14cae55349",
+    "506d2b962e07baff7ca584cbec4318712180d7c3ad107b07268495f3327df877",
+    "2d7a6c27d0af61e7b3296fae283d8beefe81d115f05a414e8b99136b1f8ae596"
+  ],
+  "reconciliation_state_refs": [
+    "working/products/reconciliation_states/6aefd5764fb377139b1d72eecbe90dd836c29f86474d748b316d727c819f9dc1/reconciliation_state.json",
+    "working/products/reconciliation_states/9516b02c92b07d70ffc43ba7108a5d5ef87bd86bc162342cea9b2a14cae55349/reconciliation_state.json",
+    "working/products/reconciliation_states/506d2b962e07baff7ca584cbec4318712180d7c3ad107b07268495f3327df877/reconciliation_state.json",
+    "working/products/reconciliation_states/2d7a6c27d0af61e7b3296fae283d8beefe81d115f05a414e8b99136b1f8ae596/reconciliation_state.json"
+  ],
+  "reference_count": 1,
   "reference_issue_count": 0,
   "review_count": 0,
   "review_summary": [],

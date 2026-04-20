@@ -29,6 +29,7 @@ from tallylot.domain.evidence import (
     EvidenceObservationKind,
     EvidenceSet,
 )
+from tallylot.domain.location_identifiers import location_id_from_parts
 
 from .coinbase_retail import instrument_kind_for_symbol
 
@@ -168,9 +169,12 @@ def statement_scope_claims(
                     effective_at=None,
                     precision=None,
                     provenance_refs=provenance_refs,
-                    location_ref=(
-                        f"coinbase:{observation.location_group_label}:"
-                        f"{observation.location_label}"
+                    location_ref=str(
+                        _statement_location_ref(
+                            source_slug=member.source_slug,
+                            location_group_label=observation.location_group_label,
+                            location_label=observation.location_label,
+                        )
                     ),
                     location_group_label=observation.location_group_label,
                     location_label=observation.location_label,
@@ -211,3 +215,18 @@ def observation_provenance_refs(
     provenance_refs: tuple[tuple[str, ...], ...],
 ) -> tuple[str, ...]:
     return tuple(sorted(":".join(ref) for ref in provenance_refs))
+
+
+def _statement_location_ref(
+    *,
+    source_slug: str,
+    location_group_label: str,
+    location_label: str,
+) -> str:
+    wallet_segment = location_label.strip()
+    account_segment = location_group_label.strip()
+    if wallet_segment and wallet_segment.casefold() != source_slug.strip().casefold():
+        return str(location_id_from_parts(source_slug, wallet_segment))
+    if account_segment and account_segment.casefold() != source_slug.strip().casefold():
+        return str(location_id_from_parts(source_slug, account_segment))
+    return str(location_id_from_parts(source_slug))

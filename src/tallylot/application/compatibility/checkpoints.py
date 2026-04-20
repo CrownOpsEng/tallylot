@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from pathlib import PurePath
 from collections.abc import Mapping
 from typing import cast
 
@@ -12,21 +14,28 @@ from tallylot.domain.balances import (
     BalanceTarget,
 )
 from tallylot.domain.checkpoint import Checkpoint
+from tallylot.domain.evidence import EvidenceSet
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import ReconciliationState
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
 
 
+@dataclass(frozen=True)
+class ObservationCompatibilityDetail:
+    support_ref: str
+    note: str = ""
+
+
 def project_balance_references_from_checkpoint(
     *,
     checkpoint: Checkpoint,
     reconciliation_states: tuple[ReconciliationState, ...],
-    observation_support_refs: Mapping[str, str] | None = None,
+    observation_details: Mapping[str, ObservationCompatibilityDetail] | None = None,
 ) -> tuple[BalanceReference, ...]:
-    support_refs = _support_refs_by_subject(
+    support_details = _support_details_by_subject(
         reconciliation_states,
-        observation_support_refs=observation_support_refs or {},
+        observation_details=observation_details or {},
     )
     references: list[BalanceReference] = []
     for assertion in checkpoint.checkpoint_assertion_records:
@@ -38,6 +47,7 @@ def project_balance_references_from_checkpoint(
         subject_key = assertion.subject_ref[1]
         location_ref = _subject_ref_text(subject_key, 1)
         instrument_ref = _subject_ref_text(subject_key, 2)
+        detail = support_details[(assertion.subject_ref, assertion.as_of)]
         references.append(
             BalanceReference(
                 target=BalanceTarget(
@@ -52,7 +62,8 @@ def project_balance_references_from_checkpoint(
                 reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
                 observed_at=assertion.as_of,
                 observed_precision=TemporalPrecision.TIMESTAMP,
-                support_ref=support_refs[(assertion.subject_ref, assertion.as_of)],
+                support_ref=detail.support_ref,
+                notes=detail.note,
             )
         )
     return tuple(
@@ -70,12 +81,30 @@ def project_balance_references_from_checkpoint(
     )
 
 
-def _support_refs_by_subject(
+def observation_details_from_evidence_set(
+    evidence_set: EvidenceSet,
+) -> dict[str, ObservationCompatibilityDetail]:
+    member_path_by_id = {
+        member.member_id: PurePath(member.locator[0]).name
+        for member in evidence_set.evidence_member_records
+        if member.locator
+    }
+    return {
+        observation.observation_id: ObservationCompatibilityDetail(
+            support_ref=member_path_by_id.get(observation.member_id, ""),
+            note=observation.notes,
+        )
+        for observation in evidence_set.evidence_observation_records
+        if member_path_by_id.get(observation.member_id, "")
+    }
+
+
+def _support_details_by_subject(
     reconciliation_states: tuple[ReconciliationState, ...],
     *,
-    observation_support_refs: Mapping[str, str],
-) -> dict[tuple[object, object], str]:
-    values: dict[tuple[object, object], str] = {}
+    observation_details: Mapping[str, ObservationCompatibilityDetail],
+) -> dict[tuple[object, object], ObservationCompatibilityDetail]:
+    values: dict[tuple[object, object], ObservationCompatibilityDetail] = {}
     for state in reconciliation_states:
         targets_by_id = {
             target.target_id: target for target in state.balance_target_records
@@ -84,25 +113,42 @@ def _support_refs_by_subject(
             if not proposal.target_refs or not proposal.evidence_refs:
                 continue
             target = targets_by_id[proposal.target_refs[0]]
-            values[(target.subject_ref, target.as_of)] = _support_ref_for_evidence_refs(
-                proposal.evidence_refs,
-                observation_support_refs=observation_support_refs,
+            values[(target.subject_ref, target.as_of)] = (
+                _support_detail_for_evidence_refs(
+                    proposal.evidence_refs,
+                    observation_details=observation_details,
+                )
             )
     return values
 
 
-def _support_ref_for_evidence_refs(
+def _support_detail_for_evidence_refs(
     evidence_refs: tuple[str, ...],
     *,
-    observation_support_refs: Mapping[str, str],
-) -> str:
-    resolved_support_refs = tuple(
-        observation_support_refs.get(ref, ref) for ref in evidence_refs
+    observation_details: Mapping[str, ObservationCompatibilityDetail],
+) -> ObservationCompatibilityDetail:
+    resolved_details = tuple(
+        observation_details.get(ref, ObservationCompatibilityDetail(support_ref=ref))
+        for ref in evidence_refs
     )
-    anchored_refs = tuple(ref for ref in resolved_support_refs if "#" in ref)
-    if anchored_refs:
-        return sorted(anchored_refs)[0]
-    return sorted(resolved_support_refs)[0]
+    noted_details = tuple(detail for detail in resolved_details if detail.note)
+    if noted_details:
+        return sorted(
+            noted_details,
+            key=lambda detail: (detail.support_ref, detail.note),
+        )[0]
+    anchored_details = tuple(
+        detail for detail in resolved_details if "#" in detail.support_ref
+    )
+    if anchored_details:
+        return sorted(
+            anchored_details,
+            key=lambda detail: (detail.support_ref, detail.note),
+        )[0]
+    return sorted(
+        resolved_details,
+        key=lambda detail: (detail.support_ref, detail.note),
+    )[0]
 
 
 def _subject_ref_text(subject_key: tuple[object, ...], index: int) -> str:

@@ -118,9 +118,11 @@ def test_stable_ids_and_canonical_ordering_follow_declared_contract() -> None:
         quantity=Decimal("1.00"),
     )
 
-    assert stable_economic_facts_id(("claim-set-b", "claim-set-a")) == (
-        '["claim-set-a","claim-set-b"]'
-    )
+    economic_facts_id = stable_economic_facts_id(("claim-set-b", "claim-set-a"))
+
+    assert economic_facts_id == stable_economic_facts_id(("claim-set-a", "claim-set-b"))
+    assert len(economic_facts_id) == 64
+    assert "/" not in economic_facts_id
     assert canonical_economic_event_records(
         (
             EconomicEventRecord(

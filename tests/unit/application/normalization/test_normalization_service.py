@@ -220,6 +220,9 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
                 "issue_count": 0,
                 "expects_evidence_set": True,
                 "expects_claim_set": True,
+                "expects_economic_facts": True,
+                "expects_reconciliation_states": True,
+                "expects_checkpoints": False,
             },
         ),
         (
@@ -230,6 +233,9 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
                 "issue_count": 0,
                 "expects_evidence_set": False,
                 "expects_claim_set": False,
+                "expects_economic_facts": False,
+                "expects_reconciliation_states": False,
+                "expects_checkpoints": False,
             },
         ),
         (
@@ -240,6 +246,9 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
                 "issue_count": 1,
                 "expects_evidence_set": False,
                 "expects_claim_set": False,
+                "expects_economic_facts": False,
+                "expects_reconciliation_states": False,
+                "expects_checkpoints": False,
             },
         ),
     ),
@@ -269,6 +278,11 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
     assert response.issue_count == expected["issue_count"]
     assert (response.evidence_set_id != "") is expected["expects_evidence_set"]
     assert (response.claim_set_id != "") is expected["expects_claim_set"]
+    assert (response.economic_facts_id != "") is expected["expects_economic_facts"]
+    assert (response.reconciliation_state_refs != ()) is expected[
+        "expects_reconciliation_states"
+    ]
+    assert (response.checkpoint_refs != ()) is expected["expects_checkpoints"]
     if expected["expects_evidence_set"]:
         assert response.evidence_set_ref == (
             "working/products/evidence_sets/"
@@ -282,6 +296,10 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
         )
     else:
         assert response.claim_set_ref == ""
+    if expected["expects_economic_facts"]:
+        assert response.economic_facts_ref.endswith("/economic_facts.json")
+    else:
+        assert response.economic_facts_ref == ""
     assert (output_dir / "facts.csv").exists()
     assert (
         json.loads(

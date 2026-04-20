@@ -260,6 +260,10 @@ def test_source_normalize_cli_writes_translation_planner_artifacts_for_coinbase(
     assert payload["evidence_set_ref"] == (
         f"working/products/evidence_sets/{payload['evidence_set_id']}/evidence_set.json"
     )
+    assert payload["economic_facts_id"]
+    assert payload["economic_facts_ref"].endswith("/economic_facts.json")
+    assert payload["reconciliation_state_ids"]
+    assert payload["checkpoint_ids"] == []
     assert plan["selected_candidate_ids"] == [f"coinbase:retail_export:{newer_name}"]
     assert (evidence_root / "evidence_set.json").exists()
     assert (evidence_root / "compatibility" / "translation_input_plan.json").exists()

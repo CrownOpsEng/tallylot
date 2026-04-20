@@ -136,3 +136,23 @@ def test_checkpoint_assertion_ordering_is_canonical() -> None:
     assert canonical_checkpoint_assertion_records(
         (later_assertion, earlier_assertion)
     ) == (earlier_assertion, later_assertion)
+
+
+def test_checkpoint_product_id_is_path_safe_and_stable() -> None:
+    checkpoint_id = stable_checkpoint_id(
+        reconciliation_state_refs=(
+            "working/products/reconciliation_states/state-1/reconciliation_state.json",
+            "working/products/reconciliation_states/state-2/reconciliation_state.json",
+        ),
+        as_of=datetime(2026, 3, 22, 23, 59, 59, tzinfo=UTC),
+    )
+
+    assert checkpoint_id == stable_checkpoint_id(
+        reconciliation_state_refs=(
+            "working/products/reconciliation_states/state-2/reconciliation_state.json",
+            "working/products/reconciliation_states/state-1/reconciliation_state.json",
+        ),
+        as_of=datetime(2026, 3, 22, 23, 59, 59, tzinfo=UTC),
+    )
+    assert len(checkpoint_id) == 64
+    assert "/" not in checkpoint_id

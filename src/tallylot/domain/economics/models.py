@@ -30,6 +30,10 @@ def _stable_id(components: JsonValue) -> str:
     return _json_text(components)
 
 
+def _stable_product_id(components: JsonValue) -> str:
+    return sha256(_json_text(components).encode("utf-8")).hexdigest()
+
+
 def _subject_ref_payload(subject_ref: SubjectRef) -> list[JsonValue]:
     kind, key = subject_ref
     return [kind, _json_ready(key)]
@@ -238,7 +242,7 @@ class EconomicFacts:
 
 
 def stable_economic_facts_id(claim_set_refs: tuple[str, ...]) -> str:
-    return _stable_id([*sorted(claim_set_refs)])
+    return _stable_product_id([*sorted(claim_set_refs)])
 
 
 def stable_event_id(claim_bundle_id: str, event_slot: int) -> str:

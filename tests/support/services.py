@@ -16,9 +16,12 @@ from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tallylot.infrastructure.storage import (
     FilesystemClaimSetRepository,
+    FilesystemCheckpointRepository,
+    FilesystemEconomicFactsRepository,
     FilesystemEvidenceRepository,
     FilesystemEvidenceSetRepository,
     FilesystemFactRepository,
+    FilesystemReconciliationStateRepository,
 )
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
@@ -84,6 +87,9 @@ def build_normalization_service(
             evidence=FilesystemEvidenceRepository(),
             evidence_sets=FilesystemEvidenceSetRepository(),
             claim_sets=FilesystemClaimSetRepository(),
+            economic_facts=FilesystemEconomicFactsRepository(),
+            reconciliation_states=FilesystemReconciliationStateRepository(),
+            checkpoints=FilesystemCheckpointRepository(),
             artifacts=resolved_artifacts,
         )
     )

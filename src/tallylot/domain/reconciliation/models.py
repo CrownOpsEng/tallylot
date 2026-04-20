@@ -30,6 +30,10 @@ def _stable_id(components: JsonValue) -> str:
     return _json_text(components)
 
 
+def _stable_product_id(components: JsonValue) -> str:
+    return sha256(_json_text(components).encode("utf-8")).hexdigest()
+
+
 def _subject_ref_payload(subject_ref: SubjectRef) -> list[JsonValue]:
     kind, key = subject_ref
     return [kind, _json_ready(key)]
@@ -294,7 +298,7 @@ def stable_continuity_segment_id(
 
 
 def stable_reconciliation_state_id(*, economic_facts_ref: str, segment_id: str) -> str:
-    return _stable_id([economic_facts_ref, segment_id])
+    return _stable_product_id([economic_facts_ref, segment_id])
 
 
 def stable_balance_target_id(

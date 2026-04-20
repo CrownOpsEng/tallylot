@@ -30,6 +30,10 @@ def _stable_id(components: JsonValue) -> str:
     return _json_text(components)
 
 
+def _stable_product_id(components: JsonValue) -> str:
+    return sha256(_json_text(components).encode("utf-8")).hexdigest()
+
+
 def _json_ready(value: object) -> JsonValue:
     if isinstance(value, tuple):
         tuple_items = cast(tuple[object, ...], value)
@@ -179,7 +183,7 @@ class Checkpoint:
 def stable_checkpoint_id(
     *, reconciliation_state_refs: tuple[str, ...], as_of: datetime
 ) -> str:
-    return _stable_id(
+    return _stable_product_id(
         [
             list(sorted(reconciliation_state_refs)),
             format_temporal_value(

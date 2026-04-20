@@ -28,6 +28,7 @@ from tallylot.domain.reconciliation import (
 )
 
 from tallylot.application.compatibility.checkpoints import (
+    ObservationCompatibilityDetail,
     project_balance_references_from_checkpoint,
 )
 
@@ -218,10 +219,19 @@ def test_checkpoint_projection_resolves_observation_ids_to_support_refs() -> Non
     references = project_balance_references_from_checkpoint(
         checkpoint=checkpoint,
         reconciliation_states=(state,),
-        observation_support_refs={
-            "observation-document": "statement.pdf",
-            "observation-row": "statement.pdf#page=1",
+        observation_details={
+            "observation-document": ObservationCompatibilityDetail(
+                support_ref="statement.pdf"
+            ),
+            "observation-row": ObservationCompatibilityDetail(
+                support_ref="statement.pdf#page=1",
+                note="Portfolio summary asset balance from Coinbase statement PDF",
+            ),
         },
     )
 
     assert references[0].support_ref == "statement.pdf#page=1"
+    assert (
+        references[0].notes
+        == "Portfolio summary asset balance from Coinbase statement PDF"
+    )

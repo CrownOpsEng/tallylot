@@ -147,8 +147,8 @@ def _matched_fixture(
         "position",
         (
             ("beneficial_owner:filing",),
-            ("location:coinbase",),
-            ("instrument:btc",),
+            ("coinbase",),
+            ("symbol:BTC@coinbase",),
             None,
             "held_position",
         ),
@@ -199,9 +199,9 @@ def _matched_fixture(
                 effective_at=None,
                 precision=None,
                 provenance_refs=("statement:row:1",),
-                scheme="asset",
+                scheme="symbol",
                 value="BTC",
-                venue="",
+                venue="coinbase",
                 instrument_kind="crypto",
                 name="Bitcoin",
             ),
@@ -218,7 +218,7 @@ def _matched_fixture(
                 effective_at=None,
                 precision=None,
                 provenance_refs=("statement:row:1",),
-                location_ref="location:coinbase",
+                location_ref="coinbase",
                 location_group_label="Coinbase",
                 location_label="Coinbase",
             ),
@@ -346,14 +346,14 @@ def _matched_fixture(
             EconomicLegRecord(
                 leg_id=(
                     '["["bundle-activity",0]","holding_change",'
-                    '["position",[["beneficial_owner:filing"],["location:coinbase"],'
-                    '["instrument:btc"],null,"held_position"]],0]'
+                    '["position",[["beneficial_owner:filing"],["coinbase"],'
+                    '["symbol:BTC@coinbase"],null,"held_position"]],0]'
                 ),
                 event_id='["bundle-activity",0]',
                 role=EconomicLegRole.HOLDING_CHANGE,
                 subject_ref=subject_ref,
-                instrument_ref=("instrument:btc",),
-                location_ref=("location:coinbase",),
+                instrument_ref=("symbol:BTC@coinbase",),
+                location_ref=("coinbase",),
                 quantity=Decimal("1.25"),
             ),
         ),

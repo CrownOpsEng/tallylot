@@ -298,6 +298,7 @@ def test_statement_row_builds_balance_claims_when_retail_is_selected(
     assert len(balance_claim.observation_refs) == 2
     assert balance_claim.balance_kind in {"asset_balance", "cash_closing_balance"}
     assert location_claim.location_label in {"Coinbase", "Coinbase Cash"}
+    assert location_claim.location_ref in {"coinbase", "coinbase:coinbase_cash"}
 
 
 def test_unsupported_selected_row_creates_blocked_claim_scope_and_compatibility_issue(

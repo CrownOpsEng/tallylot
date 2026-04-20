@@ -197,3 +197,18 @@ def test_reconciliation_state_ordering_is_canonical() -> None:
         first_proposal,
         second_proposal,
     )
+
+
+def test_reconciliation_state_product_id_is_path_safe_and_stable() -> None:
+    segment_id = "segment-1"
+    state_id = stable_reconciliation_state_id(
+        economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+        segment_id=segment_id,
+    )
+
+    assert state_id == stable_reconciliation_state_id(
+        economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+        segment_id=segment_id,
+    )
+    assert len(state_id) == 64
+    assert "/" not in state_id

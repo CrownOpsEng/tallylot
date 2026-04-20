@@ -259,6 +259,32 @@ def reconciliation_state_compatibility_snapshots_file(
     )
 
 
+def checkpoint_product_root(workspace_root: Path, checkpoint_id: str) -> Path:
+    return workspace_root / "working" / "products" / "checkpoints" / checkpoint_id
+
+
+def checkpoint_product_file(workspace_root: Path, checkpoint_id: str) -> Path:
+    return checkpoint_product_root(workspace_root, checkpoint_id) / "checkpoint.json"
+
+
+def checkpoint_ref(workspace_root: Path, checkpoint_id: str) -> str:
+    return (
+        checkpoint_product_file(workspace_root, checkpoint_id)
+        .relative_to(workspace_root)
+        .as_posix()
+    )
+
+
+def checkpoint_compatibility_references_file(
+    workspace_root: Path, checkpoint_id: str
+) -> Path:
+    return (
+        checkpoint_product_root(workspace_root, checkpoint_id)
+        / "compatibility"
+        / "balance_references.csv"
+    )
+
+
 def default_capture_normalized_root(capture_root: Path) -> Path:
     context = require_capture_root(capture_root)
     return capture_normalized_root(

@@ -1,7 +1,11 @@
 {
   "adapter_id": "coinbase",
+  "checkpoint_ids": [],
+  "checkpoint_refs": [],
   "claim_set_id": "Future Exchange:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:32df8a8250bc9b25f23791d013f2b14a7868aa1e2f11442a02d659951979c619:Future Exchange:coinbase:claim",
   "claim_set_ref": "working/products/claim_sets/Future Exchange:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:32df8a8250bc9b25f23791d013f2b14a7868aa1e2f11442a02d659951979c619:Future Exchange:coinbase:claim/claim_set.json",
+  "economic_facts_id": "21656f15b5d63d8d1949d1bfd6f1d20d4a9ecdacde333bfa66ab78b9ce364ff9",
+  "economic_facts_ref": "working/products/economic_facts/21656f15b5d63d8d1949d1bfd6f1d20d4a9ecdacde333bfa66ab78b9ce364ff9/economic_facts.json",
   "evidence_set_id": "Future Exchange:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:32df8a8250bc9b25f23791d013f2b14a7868aa1e2f11442a02d659951979c619",
   "evidence_set_ref": "working/products/evidence_sets/Future Exchange:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:32df8a8250bc9b25f23791d013f2b14a7868aa1e2f11442a02d659951979c619/evidence_set.json",
   "fact_count": 1,
@@ -11,12 +15,20 @@
   "location_count": 0,
   "normalization_window_end": "",
   "normalization_window_start": "",
+  "reconciliation_state_ids": [
+    "4f9f263803cf18df50010cf5493cefac85fc5a4a671ff462d73d92aa8b8edeef",
+    "e9970ad9d2d0f4ae8ea050e31acae20c20f8c0620989dbd80991bc5b77d56ddf"
+  ],
+  "reconciliation_state_refs": [
+    "working/products/reconciliation_states/4f9f263803cf18df50010cf5493cefac85fc5a4a671ff462d73d92aa8b8edeef/reconciliation_state.json",
+    "working/products/reconciliation_states/e9970ad9d2d0f4ae8ea050e31acae20c20f8c0620989dbd80991bc5b77d56ddf/reconciliation_state.json"
+  ],
   "reference_count": 0,
   "reference_issue_count": 0,
   "review_count": 0,
   "review_summary": [],
   "reviews_outside_normalization_window": 0,
-  "snapshot_count": 2,
+  "snapshot_count": 0,
   "source": "Future Exchange",
   "translation_blocked_count": 0,
   "translation_candidate_count": 1,

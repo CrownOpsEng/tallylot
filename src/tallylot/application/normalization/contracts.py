@@ -29,6 +29,12 @@ class NormalizeResponse:
     balance_count: int
     issue_count: int
     review_count: int
+    economic_facts_id: str = ""
+    economic_facts_ref: str = ""
+    reconciliation_state_ids: tuple[str, ...] = ()
+    reconciliation_state_refs: tuple[str, ...] = ()
+    checkpoint_ids: tuple[str, ...] = ()
+    checkpoint_refs: tuple[str, ...] = ()
     translation_candidate_count: int = 0
     translation_selected_count: int = 0
     translation_superseded_count: int = 0

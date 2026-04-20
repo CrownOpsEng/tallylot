@@ -11,6 +11,8 @@ from tallylot.domain.assertion import QuantityValue, SubjectRef
 from tallylot.domain.claim import ClaimKind, ClaimRecord, ClaimSet
 from tallylot.domain.economics import EconomicFacts, EconomicLegRecord
 from tallylot.domain.evidence import EvidenceSet
+from tallylot.domain.instruments import InstrumentIdentityClaim, InstrumentKind
+from tallylot.domain.instruments.identity import resolve_instrument_identity
 from tallylot.domain.reconciliation import (
     BalanceTargetKind,
     BalanceTargetObservationStatus,
@@ -258,12 +260,27 @@ def _subject_ref_for_balance_claim(
         for item in bundle_claims
         if item.claim_id == claim.instrument_claim_refs[0]
     )
+    resolution = resolve_instrument_identity(
+        (
+            InstrumentIdentityClaim(
+                scheme=instrument_claim.scheme,
+                value=instrument_claim.value,
+                venue=instrument_claim.venue or None,
+                kind_hint=InstrumentKind(instrument_claim.instrument_kind),
+                display_name=instrument_claim.name,
+            ),
+        )
+    )
+    if resolution is None:
+        raise ValueError(
+            f"could not resolve balance-claim instrument {instrument_claim.claim_id}"
+        )
     return (
         "position",
         (
             (beneficial_owner_ref,),
             (location_claim.location_ref,),
-            (f"instrument:{instrument_claim.value.lower()}",),
+            (str(resolution.instrument.instrument_id),),
             None,
             "held_position",
         ),
