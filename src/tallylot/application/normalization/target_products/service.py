@@ -1,4 +1,4 @@
-"""Downstream target product persistence for normalization."""
+"""Target-product execution orchestration."""
 
 from __future__ import annotations
 
@@ -29,6 +29,8 @@ from tallylot.application.compatibility.reconciliation_states import (
     project_balance_snapshots_from_reconciliation_state,
 )
 from tallylot.application.economics import build_economic_facts
+from tallylot.application.normalization.contracts import NormalizeUpdateMode
+from tallylot.application.normalization.translation import TranslationExecutionResult
 from tallylot.application.reconciliation import build_reconciliation_states
 from tallylot.domain.balances import BalanceReference, BalanceSnapshot
 from tallylot.domain.transactions import TransactionFact
@@ -39,12 +41,12 @@ from tallylot.ports.evidence import EvidenceRepositoryPort
 from tallylot.ports.facts import FactRepositoryPort
 from tallylot.ports.reconciliation_states import ReconciliationStateRepositoryPort
 
-from .annotations import FactAnnotationRecord
-from .translation import TranslationExecutionResult
+from ..annotations import FactAnnotationRecord
+from .models import TargetProductExecutionSummary
 
 
 @dataclass(frozen=True)
-class DownstreamNormalizationProducts:
+class TargetProductExecutionResult:
     economic_facts_id: str = ""
     economic_facts_ref: str = ""
     reconciliation_state_ids: tuple[str, ...] = ()
@@ -55,10 +57,18 @@ class DownstreamNormalizationProducts:
     fact_annotations: tuple[FactAnnotationRecord, ...] = ()
     balance_snapshots: tuple[BalanceSnapshot, ...] = ()
     balance_references: tuple[BalanceReference, ...] = ()
+    execution_summary: TargetProductExecutionSummary = TargetProductExecutionSummary(
+        reused_target_product_count=0,
+        rebuilt_target_product_count=0,
+        pruned_target_product_count=0,
+        refreshed_detail_output_count=0,
+    )
+    update_mode_requested: str = NormalizeUpdateMode.AUTO.value
+    update_mode_effective: str = NormalizeUpdateMode.AUTO.value
 
 
 @dataclass(frozen=True)
-class DownstreamProductDependencies:
+class TargetProductDependencies:
     facts: FactRepositoryPort
     evidence: EvidenceRepositoryPort
     economic_facts: EconomicFactsRepositoryPort
@@ -67,12 +77,13 @@ class DownstreamProductDependencies:
     artifacts: ArtifactStorePort
 
 
-def build_downstream_normalization_products(
+def build_target_product_execution(
     *,
     workspace_root: Path,
+    update_mode: NormalizeUpdateMode,
     translation_result: TranslationExecutionResult,
-    dependencies: DownstreamProductDependencies,
-) -> DownstreamNormalizationProducts:
+    dependencies: TargetProductDependencies,
+) -> TargetProductExecutionResult:
     claim_set = translation_result.claim_set
     evidence_set = translation_result.evidence_set
     if (
@@ -80,13 +91,13 @@ def build_downstream_normalization_products(
         or evidence_set is None
         or translation_result.claim_set_ref == ""
     ):
-        return DownstreamNormalizationProducts()
+        return TargetProductExecutionResult(
+            update_mode_requested=update_mode.value,
+            update_mode_effective=update_mode.value,
+        )
     economic_facts = build_economic_facts(claim_set=claim_set)
     dependencies.economic_facts.write_economic_facts(
-        economic_facts_product_file(
-            workspace_root,
-            economic_facts.economic_facts_id,
-        ),
+        economic_facts_product_file(workspace_root, economic_facts.economic_facts_id),
         economic_facts,
     )
     economic_facts_ref_value = economic_facts_ref(
@@ -124,10 +135,7 @@ def build_downstream_normalization_products(
     for state in reconciliation_states:
         reconciliation_state_ids.append(state.reconciliation_state_id)
         reconciliation_state_refs.append(
-            reconciliation_state_ref(
-                workspace_root,
-                state.reconciliation_state_id,
-            )
+            reconciliation_state_ref(workspace_root, state.reconciliation_state_id)
         )
         dependencies.reconciliation_states.write_reconciliation_state(
             reconciliation_state_product_file(
@@ -170,7 +178,7 @@ def build_downstream_normalization_products(
             projected_references,
         )
         reference_rows.extend(projected_references)
-    return DownstreamNormalizationProducts(
+    return TargetProductExecutionResult(
         economic_facts_id=economic_facts.economic_facts_id,
         economic_facts_ref=economic_facts_ref_value,
         reconciliation_state_ids=tuple(reconciliation_state_ids),
@@ -181,6 +189,22 @@ def build_downstream_normalization_products(
         fact_annotations=economic_compatibility.fact_annotations,
         balance_snapshots=_ordered_snapshots(snapshot_rows),
         balance_references=_ordered_references(reference_rows),
+        execution_summary=TargetProductExecutionSummary(
+            reused_target_product_count=0,
+            rebuilt_target_product_count=(
+                (1 if economic_facts.economic_facts_id else 0)
+                + len(reconciliation_state_ids)
+                + len(checkpoint_ids)
+            ),
+            pruned_target_product_count=0,
+            refreshed_detail_output_count=(
+                (1 if economic_facts.economic_facts_id else 0)
+                + len(reconciliation_state_ids)
+                + len(checkpoint_ids)
+            ),
+        ),
+        update_mode_requested=update_mode.value,
+        update_mode_effective=update_mode.value,
     )
 
 

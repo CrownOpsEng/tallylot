@@ -49,15 +49,15 @@ from tallylot.ports.source_translation import SourceTranslationBatch
 
 from .annotations import annotation_records_from_drafts, location_annotation_records
 from .artifacts import write_normalization_artifacts
-from .downstream_products import (
-    DownstreamProductDependencies,
-    build_downstream_normalization_products,
-)
 from .models import (
     NormalizationOutputs,
     NormalizationWindowStats,
 )
 from .summary import build_normalization_summary
+from .target_products import (
+    TargetProductDependencies,
+    build_target_product_execution,
+)
 from .translation import execute_translation
 from .translation import TranslationExecutionContext
 from .window import (
@@ -98,7 +98,7 @@ class NormalizeSourceUseCase:
             dependencies.statement_extraction
             or StatementExtractionService(self._source_registry)
         )
-        self._downstream_dependencies = DownstreamProductDependencies(
+        self._target_product_dependencies = TargetProductDependencies(
             facts=self._facts,
             evidence=self._evidence,
             economic_facts=self._economic_facts,
@@ -230,18 +230,19 @@ class NormalizeSourceUseCase:
             reviews=review_records,
             location_inventory=result.location_inventory,
         )
-        downstream_products = build_downstream_normalization_products(
+        target_products = build_target_product_execution(
             workspace_root=workspace_root,
+            update_mode=request.update_mode,
             translation_result=translation_result,
-            dependencies=self._downstream_dependencies,
+            dependencies=self._target_product_dependencies,
         )
-        if downstream_products.economic_facts_id:
+        if target_products.economic_facts_id:
             outputs = replace(
                 outputs,
-                facts=downstream_products.facts,
-                fact_annotations=downstream_products.fact_annotations,
-                balance_snapshots=downstream_products.balance_snapshots,
-                balance_references=downstream_products.balance_references,
+                facts=target_products.facts,
+                fact_annotations=target_products.fact_annotations,
+                balance_snapshots=target_products.balance_snapshots,
+                balance_references=target_products.balance_references,
             )
         write_normalization_artifacts(
             output_dir,
@@ -266,12 +267,12 @@ class NormalizeSourceUseCase:
                 evidence_set_ref=translation_result.evidence_set_ref,
                 claim_set_id=translation_result.claim_set_id,
                 claim_set_ref=translation_result.claim_set_ref,
-                economic_facts_id=downstream_products.economic_facts_id,
-                economic_facts_ref=downstream_products.economic_facts_ref,
-                reconciliation_state_ids=downstream_products.reconciliation_state_ids,
-                reconciliation_state_refs=downstream_products.reconciliation_state_refs,
-                checkpoint_ids=downstream_products.checkpoint_ids,
-                checkpoint_refs=downstream_products.checkpoint_refs,
+                economic_facts_id=target_products.economic_facts_id,
+                economic_facts_ref=target_products.economic_facts_ref,
+                reconciliation_state_ids=target_products.reconciliation_state_ids,
+                reconciliation_state_refs=target_products.reconciliation_state_refs,
+                checkpoint_ids=target_products.checkpoint_ids,
+                checkpoint_refs=target_products.checkpoint_refs,
             ),
         )
         append_capture_status_record(
@@ -293,12 +294,18 @@ class NormalizeSourceUseCase:
             evidence_set_ref=translation_result.evidence_set_ref,
             claim_set_id=translation_result.claim_set_id,
             claim_set_ref=translation_result.claim_set_ref,
-            economic_facts_id=downstream_products.economic_facts_id,
-            economic_facts_ref=downstream_products.economic_facts_ref,
-            reconciliation_state_ids=downstream_products.reconciliation_state_ids,
-            reconciliation_state_refs=downstream_products.reconciliation_state_refs,
-            checkpoint_ids=downstream_products.checkpoint_ids,
-            checkpoint_refs=downstream_products.checkpoint_refs,
+            economic_facts_id=target_products.economic_facts_id,
+            economic_facts_ref=target_products.economic_facts_ref,
+            reconciliation_state_ids=target_products.reconciliation_state_ids,
+            reconciliation_state_refs=target_products.reconciliation_state_refs,
+            checkpoint_ids=target_products.checkpoint_ids,
+            checkpoint_refs=target_products.checkpoint_refs,
+            update_mode_requested=target_products.update_mode_requested,
+            update_mode_effective=target_products.update_mode_effective,
+            reused_target_product_count=target_products.execution_summary.reused_target_product_count,
+            rebuilt_target_product_count=target_products.execution_summary.rebuilt_target_product_count,
+            pruned_target_product_count=target_products.execution_summary.pruned_target_product_count,
+            refreshed_detail_output_count=target_products.execution_summary.refreshed_detail_output_count,
             fact_count=len(outputs.facts),
             balance_count=len(outputs.balance_snapshots),
             issue_count=len(outputs.issues),
