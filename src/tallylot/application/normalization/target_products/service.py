@@ -5,35 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from tallylot.application.capture_paths import (
-    checkpoint_compatibility_references_file,
-    checkpoint_product_file,
-    checkpoint_ref,
-    economic_facts_compatibility_fact_annotations_file,
-    economic_facts_compatibility_facts_file,
-    economic_facts_product_file,
-    economic_facts_ref,
-    reconciliation_state_compatibility_snapshots_file,
-    reconciliation_state_product_file,
-    reconciliation_state_ref,
-)
-from tallylot.application.checkpoint import build_checkpoints
-from tallylot.application.compatibility.checkpoints import (
-    observation_details_from_evidence_set,
-    project_balance_references_from_checkpoint,
-)
-from tallylot.application.compatibility.economic_facts import (
-    project_compatibility_artifacts_from_economic_facts,
-)
-from tallylot.application.compatibility.reconciliation_states import (
-    project_balance_snapshots_from_reconciliation_state,
-)
-from tallylot.application.economics import build_economic_facts
 from tallylot.application.normalization.contracts import NormalizeUpdateMode
 from tallylot.application.normalization.translation import TranslationExecutionResult
-from tallylot.application.reconciliation import build_reconciliation_states
 from tallylot.domain.balances import BalanceReference, BalanceSnapshot
 from tallylot.domain.transactions import TransactionFact
+from tallylot.domain.types import JsonValue
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.checkpoints import CheckpointRepositoryPort
 from tallylot.ports.economic_facts import EconomicFactsRepositoryPort
@@ -42,7 +18,25 @@ from tallylot.ports.facts import FactRepositoryPort
 from tallylot.ports.reconciliation_states import ReconciliationStateRepositoryPort
 
 from ..annotations import FactAnnotationRecord
-from .models import TargetProductExecutionSummary
+from .models import (
+    TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION,
+    TargetProductExecutionPlan,
+    TargetProductExecutionSummary,
+)
+from .planning import (
+    load_prior_target_product_execution,
+    summarize_target_product_execution,
+)
+from .payloads import execution_plan_payload, prune_product_roots, pruned_refs
+from .runtime import (
+    CheckpointResolutionRequest,
+    EconomicFactsResolutionRequest,
+    ReconciliationStateResolutionRequest,
+    resolve_checkpoints,
+    resolve_economic_facts,
+    resolve_reconciliation_states,
+)
+from .signatures import claim_set_execution_fingerprint
 
 
 @dataclass(frozen=True)
@@ -63,6 +57,7 @@ class TargetProductExecutionResult:
         pruned_target_product_count=0,
         refreshed_detail_output_count=0,
     )
+    execution_plan_payload: JsonValue | None = None
     update_mode_requested: str = NormalizeUpdateMode.AUTO.value
     update_mode_effective: str = NormalizeUpdateMode.AUTO.value
 
@@ -80,6 +75,7 @@ class TargetProductDependencies:
 def build_target_product_execution(
     *,
     workspace_root: Path,
+    normalization_output_dir: Path,
     update_mode: NormalizeUpdateMode,
     translation_result: TranslationExecutionResult,
     dependencies: TargetProductDependencies,
@@ -95,114 +91,121 @@ def build_target_product_execution(
             update_mode_requested=update_mode.value,
             update_mode_effective=update_mode.value,
         )
-    economic_facts = build_economic_facts(claim_set=claim_set)
-    dependencies.economic_facts.write_economic_facts(
-        economic_facts_product_file(workspace_root, economic_facts.economic_facts_id),
+
+    summary_path = normalization_output_dir / "normalization_summary.json"
+    prior_plan = load_prior_target_product_execution(summary_path)
+    claim_set_fingerprint = claim_set_execution_fingerprint(claim_set)
+
+    (
         economic_facts,
-    )
-    economic_facts_ref_value = economic_facts_ref(
-        workspace_root,
-        economic_facts.economic_facts_id,
-    )
-    economic_compatibility = project_compatibility_artifacts_from_economic_facts(
-        economic_facts=economic_facts,
-        claim_set=claim_set,
-        evidence_set=evidence_set,
-        draft_projection_field_records=translation_result.draft_projection_field_records,
-    )
-    dependencies.facts.write_facts(
-        economic_facts_compatibility_facts_file(
-            workspace_root,
-            economic_facts.economic_facts_id,
-        ),
-        economic_compatibility.facts,
-    )
-    dependencies.artifacts.write_json(
-        economic_facts_compatibility_fact_annotations_file(
-            workspace_root,
-            economic_facts.economic_facts_id,
-        ),
-        [record.to_json() for record in economic_compatibility.fact_annotations],
-    )
-    reconciliation_states = build_reconciliation_states(
-        economic_facts=economic_facts,
-        claim_set=claim_set,
-        evidence_set=evidence_set,
-    )
-    snapshot_rows: list[BalanceSnapshot] = []
-    reconciliation_state_ids: list[str] = []
-    reconciliation_state_refs: list[str] = []
-    for state in reconciliation_states:
-        reconciliation_state_ids.append(state.reconciliation_state_id)
-        reconciliation_state_refs.append(
-            reconciliation_state_ref(workspace_root, state.reconciliation_state_id)
+        economic_facts_decision,
+        economic_facts_compatibility,
+    ) = resolve_economic_facts(
+        EconomicFactsResolutionRequest(
+            workspace_root=workspace_root,
+            update_mode=update_mode,
+            claim_set=claim_set,
+            claim_set_fingerprint=claim_set_fingerprint,
+            evidence_set=evidence_set,
+            translation_result=translation_result,
+            prior_plan=prior_plan,
+            dependencies=dependencies,
         )
-        dependencies.reconciliation_states.write_reconciliation_state(
-            reconciliation_state_product_file(
-                workspace_root,
-                state.reconciliation_state_id,
+    )
+    (
+        reconciliation_states,
+        reconciliation_state_decisions,
+        balance_snapshots,
+    ) = resolve_reconciliation_states(
+        ReconciliationStateResolutionRequest(
+            workspace_root=workspace_root,
+            update_mode=update_mode,
+            claim_set=claim_set,
+            claim_set_fingerprint=claim_set_fingerprint,
+            evidence_set=evidence_set,
+            economic_facts=economic_facts,
+            economic_facts_reused=(
+                economic_facts_decision.kernel_action.value == "reused"
             ),
-            state,
+            prior_plan=prior_plan,
+            dependencies=dependencies,
         )
-        projected_snapshots = project_balance_snapshots_from_reconciliation_state(state)
-        dependencies.evidence.write_balance_snapshots(
-            reconciliation_state_compatibility_snapshots_file(
-                workspace_root,
-                state.reconciliation_state_id,
-            ),
-            projected_snapshots,
-        )
-        snapshot_rows.extend(projected_snapshots)
-    observation_details = observation_details_from_evidence_set(evidence_set)
-    checkpoints = build_checkpoints(reconciliation_states=reconciliation_states)
-    reference_rows: list[BalanceReference] = []
-    checkpoint_ids: list[str] = []
-    checkpoint_refs: list[str] = []
-    for checkpoint in checkpoints:
-        checkpoint_ids.append(checkpoint.checkpoint_id)
-        checkpoint_refs.append(checkpoint_ref(workspace_root, checkpoint.checkpoint_id))
-        dependencies.checkpoints.write_checkpoint(
-            checkpoint_product_file(workspace_root, checkpoint.checkpoint_id),
-            checkpoint,
-        )
-        projected_references = project_balance_references_from_checkpoint(
-            checkpoint=checkpoint,
+    )
+    checkpoints, checkpoint_decisions, balance_references = resolve_checkpoints(
+        CheckpointResolutionRequest(
+            workspace_root=workspace_root,
+            update_mode=update_mode,
+            claim_set_fingerprint=claim_set_fingerprint,
+            evidence_set=evidence_set,
             reconciliation_states=reconciliation_states,
-            observation_details=observation_details,
-        )
-        dependencies.evidence.write_balance_references(
-            checkpoint_compatibility_references_file(
-                workspace_root,
-                checkpoint.checkpoint_id,
+            reconciliation_states_reused=all(
+                decision.kernel_action.value == "reused"
+                for decision in reconciliation_state_decisions
             ),
-            projected_references,
+            prior_plan=prior_plan,
+            dependencies=dependencies,
         )
-        reference_rows.extend(projected_references)
+    )
+
+    pruned_reconciliation_state_refs = pruned_refs(
+        prior_refs=(
+            ()
+            if prior_plan is None
+            else tuple(
+                decision.reconciliation_state_ref
+                for decision in prior_plan.reconciliation_states
+            )
+        ),
+        current_refs=tuple(
+            decision.reconciliation_state_ref
+            for decision in reconciliation_state_decisions
+        ),
+    )
+    pruned_checkpoint_refs = pruned_refs(
+        prior_refs=(
+            ()
+            if prior_plan is None
+            else tuple(decision.checkpoint_ref for decision in prior_plan.checkpoints)
+        ),
+        current_refs=tuple(
+            decision.checkpoint_ref for decision in checkpoint_decisions
+        ),
+    )
+    prune_product_roots(workspace_root, pruned_reconciliation_state_refs)
+    prune_product_roots(workspace_root, pruned_checkpoint_refs)
+
+    execution_plan = TargetProductExecutionPlan(
+        signature_version=TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION,
+        update_mode_requested=update_mode.value,
+        update_mode_effective=update_mode.value,
+        claim_set_fingerprint=claim_set_fingerprint,
+        economic_facts=economic_facts_decision,
+        reconciliation_states=reconciliation_state_decisions,
+        checkpoints=checkpoint_decisions,
+        pruned_reconciliation_state_refs=pruned_reconciliation_state_refs,
+        pruned_checkpoint_refs=pruned_checkpoint_refs,
+    )
+    execution_summary = summarize_target_product_execution(execution_plan)
     return TargetProductExecutionResult(
         economic_facts_id=economic_facts.economic_facts_id,
-        economic_facts_ref=economic_facts_ref_value,
-        reconciliation_state_ids=tuple(reconciliation_state_ids),
-        reconciliation_state_refs=tuple(reconciliation_state_refs),
-        checkpoint_ids=tuple(checkpoint_ids),
-        checkpoint_refs=tuple(checkpoint_refs),
-        facts=economic_compatibility.facts,
-        fact_annotations=economic_compatibility.fact_annotations,
-        balance_snapshots=_ordered_snapshots(snapshot_rows),
-        balance_references=_ordered_references(reference_rows),
-        execution_summary=TargetProductExecutionSummary(
-            reused_target_product_count=0,
-            rebuilt_target_product_count=(
-                (1 if economic_facts.economic_facts_id else 0)
-                + len(reconciliation_state_ids)
-                + len(checkpoint_ids)
-            ),
-            pruned_target_product_count=0,
-            refreshed_detail_output_count=(
-                (1 if economic_facts.economic_facts_id else 0)
-                + len(reconciliation_state_ids)
-                + len(checkpoint_ids)
-            ),
+        economic_facts_ref=economic_facts_decision.economic_facts_ref,
+        reconciliation_state_ids=tuple(
+            state.reconciliation_state_id for state in reconciliation_states
         ),
+        reconciliation_state_refs=tuple(
+            decision.reconciliation_state_ref
+            for decision in reconciliation_state_decisions
+        ),
+        checkpoint_ids=tuple(checkpoint.checkpoint_id for checkpoint in checkpoints),
+        checkpoint_refs=tuple(
+            decision.checkpoint_ref for decision in checkpoint_decisions
+        ),
+        facts=economic_facts_compatibility.facts,
+        fact_annotations=economic_facts_compatibility.fact_annotations,
+        balance_snapshots=_ordered_snapshots(list(balance_snapshots)),
+        balance_references=_ordered_references(list(balance_references)),
+        execution_summary=execution_summary,
+        execution_plan_payload=execution_plan_payload(execution_plan),
         update_mode_requested=update_mode.value,
         update_mode_effective=update_mode.value,
     )

@@ -8,6 +8,8 @@ from tallylot.application.normalization.target_products import (
     CheckpointExecutionCandidate,
     EconomicFactsExecutionCandidate,
     ReconciliationStateExecutionCandidate,
+    TargetProductExecutionPlan,
+    TargetProductExecutionPlanningRequest,
     TargetProductStageAction,
     plan_target_product_execution,
 )
@@ -48,7 +50,7 @@ def test_auto_mode_marks_stage_for_reuse_when_signature_matches_and_persisted_ro
         },
     )
 
-    plan = plan_target_product_execution(
+    plan = _plan_execution(
         summary_path=summary_path,
         update_mode=NormalizeUpdateMode.AUTO,
         claim_set_fingerprint="claim-set-fingerprint",
@@ -102,7 +104,7 @@ def test_auto_mode_marks_stage_for_rebuild_when_signature_changes(
         ],
     )
 
-    plan = plan_target_product_execution(
+    plan = _plan_execution(
         summary_path=summary_path,
         update_mode=NormalizeUpdateMode.AUTO,
         claim_set_fingerprint="claim-set-fingerprint",
@@ -150,7 +152,7 @@ def test_auto_mode_downgrades_reuse_to_rebuild_when_persisted_file_is_missing(
         },
     )
 
-    plan = plan_target_product_execution(
+    plan = _plan_execution(
         summary_path=summary_path,
         update_mode=NormalizeUpdateMode.AUTO,
         claim_set_fingerprint="claim-set-fingerprint",
@@ -190,7 +192,7 @@ def test_full_update_reuses_kernel_but_marks_detail_outputs_for_refresh(
         },
     )
 
-    plan = plan_target_product_execution(
+    plan = _plan_execution(
         summary_path=summary_path,
         update_mode=NormalizeUpdateMode.FULL_UPDATE,
         claim_set_fingerprint="claim-set-fingerprint",
@@ -232,7 +234,7 @@ def test_rebuild_mode_marks_all_authoritative_and_detail_stages_for_rebuild(
     ):
         _touch(path)
 
-    plan = plan_target_product_execution(
+    plan = _plan_execution(
         summary_path=tmp_path / "normalization_summary.json",
         update_mode=NormalizeUpdateMode.REBUILD,
         claim_set_fingerprint="claim-set-fingerprint",
@@ -314,7 +316,7 @@ def test_planner_marks_stale_reconciliation_state_refs_for_prune(
     state_kernel = tmp_path / "state-2.json"
     _touch(state_kernel)
 
-    plan = plan_target_product_execution(
+    plan = _plan_execution(
         summary_path=summary_path,
         update_mode=NormalizeUpdateMode.AUTO,
         claim_set_fingerprint="claim-set-fingerprint",
@@ -361,7 +363,7 @@ def test_planner_marks_stale_checkpoint_refs_for_prune(tmp_path: Path) -> None:
     checkpoint_kernel = tmp_path / "checkpoint-2.json"
     _touch(checkpoint_kernel)
 
-    plan = plan_target_product_execution(
+    plan = _plan_execution(
         summary_path=summary_path,
         update_mode=NormalizeUpdateMode.AUTO,
         claim_set_fingerprint="claim-set-fingerprint",
@@ -413,3 +415,24 @@ def _write_summary(
 def _touch(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("{}", encoding="utf-8")
+
+
+def _plan_execution(
+    *,
+    summary_path: Path,
+    update_mode: NormalizeUpdateMode,
+    claim_set_fingerprint: str,
+    economic_facts: EconomicFactsExecutionCandidate | None,
+    reconciliation_states: tuple[ReconciliationStateExecutionCandidate, ...],
+    checkpoints: tuple[CheckpointExecutionCandidate, ...],
+) -> TargetProductExecutionPlan:
+    return plan_target_product_execution(
+        TargetProductExecutionPlanningRequest(
+            summary_path=summary_path,
+            update_mode=update_mode,
+            claim_set_fingerprint=claim_set_fingerprint,
+            economic_facts=economic_facts,
+            reconciliation_states=reconciliation_states,
+            checkpoints=checkpoints,
+        )
+    )

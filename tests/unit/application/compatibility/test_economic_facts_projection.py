@@ -178,3 +178,73 @@ def test_projection_requires_projection_fields_for_each_claim_bundle(
             evidence_set=evidence_set,
             draft_projection_field_records=(),
         )
+
+
+def test_projection_replay_with_unchanged_inputs_preserves_rows(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\nUser,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    _selected_batch, claim_build, evidence_set = _claim_build(raw_dir)
+    economic_facts = build_economic_facts(claim_set=claim_build.claim_set)
+
+    first = project_compatibility_artifacts_from_economic_facts(
+        economic_facts=economic_facts,
+        claim_set=claim_build.claim_set,
+        evidence_set=evidence_set,
+        draft_projection_field_records=claim_build.draft_projection_field_records,
+    )
+    second = project_compatibility_artifacts_from_economic_facts(
+        economic_facts=economic_facts,
+        claim_set=claim_build.claim_set,
+        evidence_set=evidence_set,
+        draft_projection_field_records=claim_build.draft_projection_field_records,
+    )
+
+    assert tuple(fact.to_row() for fact in first.facts) == tuple(
+        fact.to_row() for fact in second.facts
+    )
+    assert tuple(record.to_json() for record in first.fact_annotations) == tuple(
+        record.to_json() for record in second.fact_annotations
+    )
+
+
+def test_projection_order_only_changes_do_not_change_rows(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\nUser,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    _selected_batch, claim_build, evidence_set = _claim_build(raw_dir)
+    economic_facts = build_economic_facts(claim_set=claim_build.claim_set)
+    reordered_economic_facts = replace(
+        economic_facts,
+        economic_event_records=tuple(reversed(economic_facts.economic_event_records)),
+        economic_leg_records=tuple(reversed(economic_facts.economic_leg_records)),
+    )
+
+    first = project_compatibility_artifacts_from_economic_facts(
+        economic_facts=economic_facts,
+        claim_set=claim_build.claim_set,
+        evidence_set=evidence_set,
+        draft_projection_field_records=claim_build.draft_projection_field_records,
+    )
+    second = project_compatibility_artifacts_from_economic_facts(
+        economic_facts=reordered_economic_facts,
+        claim_set=claim_build.claim_set,
+        evidence_set=evidence_set,
+        draft_projection_field_records=claim_build.draft_projection_field_records,
+    )
+
+    assert tuple(fact.to_row() for fact in first.facts) == tuple(
+        fact.to_row() for fact in second.facts
+    )

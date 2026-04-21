@@ -1,9 +1,8 @@
 """Target-product execution planning."""
 
-# pylint: disable=too-many-arguments
-
 from __future__ import annotations
 
+from dataclasses import dataclass
 import json
 from pathlib import Path
 from typing import cast
@@ -25,6 +24,16 @@ from .models import (
 )
 
 
+@dataclass(frozen=True)
+class TargetProductExecutionPlanningRequest:
+    summary_path: Path
+    update_mode: NormalizeUpdateMode
+    claim_set_fingerprint: str
+    economic_facts: EconomicFactsExecutionCandidate | None
+    reconciliation_states: tuple[ReconciliationStateExecutionCandidate, ...]
+    checkpoints: tuple[CheckpointExecutionCandidate, ...]
+
+
 def load_prior_target_product_execution(
     summary_path: Path,
 ) -> TargetProductExecutionPlan | None:
@@ -41,24 +50,18 @@ def load_prior_target_product_execution(
 
 
 def plan_target_product_execution(
-    *,
-    summary_path: Path,
-    update_mode: NormalizeUpdateMode,
-    claim_set_fingerprint: str,
-    economic_facts: EconomicFactsExecutionCandidate | None,
-    reconciliation_states: tuple[ReconciliationStateExecutionCandidate, ...],
-    checkpoints: tuple[CheckpointExecutionCandidate, ...],
+    request: TargetProductExecutionPlanningRequest,
 ) -> TargetProductExecutionPlan:
-    prior_plan = load_prior_target_product_execution(summary_path)
+    prior_plan = load_prior_target_product_execution(request.summary_path)
     economic_facts_decision = _plan_economic_facts(
-        update_mode=update_mode,
+        update_mode=request.update_mode,
         prior_plan=prior_plan,
-        current=economic_facts,
+        current=request.economic_facts,
     )
     reconciliation_state_decisions = _plan_reconciliation_states(
-        update_mode=update_mode,
+        update_mode=request.update_mode,
         prior_plan=prior_plan,
-        current=reconciliation_states,
+        current=request.reconciliation_states,
         upstream_rebuilt=(
             economic_facts_decision is not None
             and economic_facts_decision.kernel_action
@@ -66,9 +69,9 @@ def plan_target_product_execution(
         ),
     )
     checkpoint_decisions = _plan_checkpoints(
-        update_mode=update_mode,
+        update_mode=request.update_mode,
         prior_plan=prior_plan,
-        current=checkpoints,
+        current=request.checkpoints,
         upstream_rebuilt=any(
             decision.kernel_action is TargetProductStageAction.REBUILT
             for decision in reconciliation_state_decisions
@@ -82,9 +85,9 @@ def plan_target_product_execution(
     }
     return TargetProductExecutionPlan(
         signature_version=TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION,
-        update_mode_requested=update_mode.value,
-        update_mode_effective=update_mode.value,
-        claim_set_fingerprint=claim_set_fingerprint,
+        update_mode_requested=request.update_mode.value,
+        update_mode_effective=request.update_mode.value,
+        claim_set_fingerprint=request.claim_set_fingerprint,
         economic_facts=economic_facts_decision,
         reconciliation_states=reconciliation_state_decisions,
         checkpoints=checkpoint_decisions,

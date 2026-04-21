@@ -38,6 +38,66 @@
   "reviews_outside_normalization_window": 0,
   "snapshot_count": 2,
   "source": "coinbase",
+  "target_product_execution": {
+    "checkpoints": [
+      {
+        "checkpoint_id": "90b0fd49f8db1cec8c0fd7f419460d4e9ab9c91d3111197f5941fb8066e1d88e",
+        "checkpoint_ref": "working/products/checkpoints/90b0fd49f8db1cec8c0fd7f419460d4e9ab9c91d3111197f5941fb8066e1d88e/checkpoint.json",
+        "fingerprint": "07f45e8a29bf2cc1eee070b9c9f0854489734e17450b6311dc900d8c21a9941e",
+        "kernel_action": "rebuilt",
+        "reference_action": "refreshed",
+        "reference_signature": "[{\"balance_kind\":\"available\",\"instrument_id\":\"symbol:CAD@coinbase\",\"location_id\":\"coinbase:coinbase_cash\",\"notes\":\"Closing fiat balance from Coinbase statement PDF\",\"observed_at\":\"2026-03-22 23:59:59\",\"observed_precision\":\"timestamp\",\"provider_block_ref\":\"\",\"provider_family\":\"\",\"provider_locator\":\"\",\"quantity\":\"0\",\"reference_kind\":\"source_document\",\"reviewed_at\":\"\",\"reviewed_by\":\"\",\"source\":\"coinbase\",\"support_ref\":\"2026-03-23 - fixture.pdf\",\"target_at\":\"2026-03-22 23:59:59\",\"target_precision\":\"timestamp\"}]"
+      }
+    ],
+    "claim_set_fingerprint": "154072b84406f5a1cd7cd3e86756ceb3f51737495c9335f7fc48a94a6f209eda",
+    "economic_facts": {
+      "compatibility_action": "refreshed",
+      "compatibility_signature": "2388a8cfa8a87ccce7269e87456be6a622dc3a255ce8221fe5719ebe6af1aebb",
+      "economic_facts_id": "2ec5b5edbecec0682b1428d76ae2199f9a8fd8072be919d54d2a13883017324c",
+      "economic_facts_ref": "working/products/economic_facts/2ec5b5edbecec0682b1428d76ae2199f9a8fd8072be919d54d2a13883017324c/economic_facts.json",
+      "fingerprint": "171953b22a1e115642f3e2e09a45f90b3cb8ef5f98af78d49a328f552090f63c",
+      "kernel_action": "rebuilt"
+    },
+    "pruned_checkpoint_refs": [],
+    "pruned_reconciliation_state_refs": [],
+    "reconciliation_states": [
+      {
+        "fingerprint": "80a0bc4c2f2f88829acbac8aa577583cb6ddcd6d38207d2b38052c1ca5f0225d",
+        "kernel_action": "rebuilt",
+        "reconciliation_state_id": "ed78ae3843afcf30e3a60ec4eaec8cd34b946808a8103f4038e1f95b6ef0ccea",
+        "reconciliation_state_ref": "working/products/reconciliation_states/ed78ae3843afcf30e3a60ec4eaec8cd34b946808a8103f4038e1f95b6ef0ccea/reconciliation_state.json",
+        "snapshot_action": "refreshed",
+        "snapshot_signature": "[]"
+      },
+      {
+        "fingerprint": "86ef732fe8e5758982f91fff3cd8d5eeed342e45d38f46cbe6f01cd593392b0f",
+        "kernel_action": "rebuilt",
+        "reconciliation_state_id": "76b76b61e1f0f88762710919b94a7b90e30d9a9164b9d847e22130aaa03f73c2",
+        "reconciliation_state_ref": "working/products/reconciliation_states/76b76b61e1f0f88762710919b94a7b90e30d9a9164b9d847e22130aaa03f73c2/reconciliation_state.json",
+        "snapshot_action": "refreshed",
+        "snapshot_signature": "[]"
+      },
+      {
+        "fingerprint": "d5498fd79ff2c8de7782921b9fa9de78f087445958e86c2590149847f938d4c7",
+        "kernel_action": "rebuilt",
+        "reconciliation_state_id": "d2a3294175836927e99b46f7e73257aaabab2bb9f870abec5819dabeb20da63f",
+        "reconciliation_state_ref": "working/products/reconciliation_states/d2a3294175836927e99b46f7e73257aaabab2bb9f870abec5819dabeb20da63f/reconciliation_state.json",
+        "snapshot_action": "refreshed",
+        "snapshot_signature": "[{\"balance_kind\":\"available\",\"instrument_id\":\"symbol:ETH@coinbase\",\"location_id\":\"coinbase\",\"notes\":\"\",\"quantity\":\"0\",\"snapshot_basis\":\"fact_cutoff\",\"source\":\"coinbase\",\"target_at\":\"2026-03-22 23:59:59\",\"target_precision\":\"timestamp\"}]"
+      },
+      {
+        "fingerprint": "c1ffea480cbe725b72ae0bc67d550ba386b12d7dcecb75698186e7c7d9b2e61d",
+        "kernel_action": "rebuilt",
+        "reconciliation_state_id": "53cf6dcf051f9a741229e7b909828822ba21ea9cf349b5d6e52f4b7487f9ec3c",
+        "reconciliation_state_ref": "working/products/reconciliation_states/53cf6dcf051f9a741229e7b909828822ba21ea9cf349b5d6e52f4b7487f9ec3c/reconciliation_state.json",
+        "snapshot_action": "refreshed",
+        "snapshot_signature": "[{\"balance_kind\":\"available\",\"instrument_id\":\"symbol:CAD@coinbase\",\"location_id\":\"coinbase:coinbase_cash\",\"notes\":\"\",\"quantity\":\"0\",\"snapshot_basis\":\"fact_cutoff\",\"source\":\"coinbase\",\"target_at\":\"2026-03-22 23:59:59\",\"target_precision\":\"timestamp\"}]"
+      }
+    ],
+    "signature_version": "normalization-target-products-v1",
+    "update_mode_effective": "auto",
+    "update_mode_requested": "auto"
+  },
   "translation_blocked_count": 0,
   "translation_candidate_count": 1,
   "translation_planner_used": true,

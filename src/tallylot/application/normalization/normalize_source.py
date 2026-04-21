@@ -54,7 +54,7 @@ from .models import (
     NormalizationWindowStats,
 )
 from .summary import build_normalization_summary
-from .target_products import (
+from .target_products.service import (
     TargetProductDependencies,
     build_target_product_execution,
 )
@@ -232,6 +232,7 @@ class NormalizeSourceUseCase:
         )
         target_products = build_target_product_execution(
             workspace_root=workspace_root,
+            normalization_output_dir=output_dir,
             update_mode=request.update_mode,
             translation_result=translation_result,
             dependencies=self._target_product_dependencies,
@@ -273,6 +274,7 @@ class NormalizeSourceUseCase:
                 reconciliation_state_refs=target_products.reconciliation_state_refs,
                 checkpoint_ids=target_products.checkpoint_ids,
                 checkpoint_refs=target_products.checkpoint_refs,
+                target_product_execution=target_products.execution_plan_payload,
             ),
         )
         append_capture_status_record(

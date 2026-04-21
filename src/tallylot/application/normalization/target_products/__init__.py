@@ -16,11 +16,7 @@ from .planning import (
     load_prior_target_product_execution,
     plan_target_product_execution,
     summarize_target_product_execution,
-)
-from .service import (
-    TargetProductDependencies,
-    TargetProductExecutionResult,
-    build_target_product_execution,
+    TargetProductExecutionPlanningRequest,
 )
 from .signatures import (
     checkpoint_reference_signature,
@@ -37,12 +33,10 @@ __all__ = [
     "ReconciliationStateExecutionCandidate",
     "ReconciliationStateExecutionDecision",
     "TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION",
-    "TargetProductDependencies",
+    "TargetProductExecutionPlanningRequest",
     "TargetProductExecutionPlan",
-    "TargetProductExecutionResult",
     "TargetProductExecutionSummary",
     "TargetProductStageAction",
-    "build_target_product_execution",
     "checkpoint_reference_signature",
     "claim_set_execution_fingerprint",
     "economic_facts_compatibility_signature",

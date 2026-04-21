@@ -39,8 +39,8 @@ def test_coinbase_retail_only_normalization_writes_downstream_products(
     assert response.economic_facts_ref
     assert response.reconciliation_state_ids
     assert response.reconciliation_state_refs
-    assert response.checkpoint_ids == ()
-    assert response.checkpoint_refs == ()
+    assert not response.checkpoint_ids
+    assert not response.checkpoint_refs
     assert response.fact_count == len(read_rows(output_dir / "facts.csv"))
     assert (workspace_root / response.economic_facts_ref).exists()
     assert all(
@@ -162,6 +162,113 @@ def test_coinbase_statement_backed_normalization_writes_checkpoint_products(
             "notes": "Closing fiat balance from Coinbase statement PDF",
         },
     ]
+
+
+def test_coinbase_normalization_second_identical_run_preserves_refs_and_records_reuse(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(
+        tmp_path,
+        source="coinbase",
+        source_dir=fixture_raw_dir("coinbase", "retail_buy_renamed"),
+    )
+    output_dir = tmp_path / "normalized"
+    service = build_normalization_service()
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    first_facts = read_rows(output_dir / "facts.csv")
+    first_snapshots = read_rows(output_dir / "balance_snapshots.csv")
+    first_references = read_rows(output_dir / "balance_references.csv")
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert read_rows(output_dir / "facts.csv") == first_facts
+    assert read_rows(output_dir / "balance_snapshots.csv") == first_snapshots
+    assert read_rows(output_dir / "balance_references.csv") == first_references
+    assert "target_product_execution" in summary
+    assert (
+        summary["target_product_execution"]["economic_facts"]["kernel_action"]
+        == "reused"
+    )
+
+
+def test_coinbase_normalization_changed_capture_rebuilds_only_affected_target_products(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(
+        tmp_path,
+        source="coinbase",
+        source_dir=fixture_raw_dir("coinbase", "retail_buy_renamed"),
+    )
+    output_dir = tmp_path / "normalized"
+    service = build_normalization_service()
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    first_summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+    first_facts = read_rows(output_dir / "facts.csv")
+    (raw_dir / "retail-export.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,ETH,0.50000000,CAD,$4000.00,$2000.00,$2010.00,$10.00,"
+        "Bought 0.5 ETH\n",
+        encoding="utf-8",
+    )
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+    workspace_root = tmp_path / "workspace"
+
+    assert (
+        second.economic_facts_ref != first.economic_facts_ref
+        or summary["target_product_execution"]["economic_facts"]["fingerprint"]
+        != first_summary["target_product_execution"]["economic_facts"]["fingerprint"]
+        or read_rows(output_dir / "facts.csv") != first_facts
+    )
+    assert (
+        summary["target_product_execution"]["economic_facts"]["kernel_action"]
+        == "rebuilt"
+    )
+    assert not any(
+        (workspace_root / ref).exists()
+        for ref in summary["target_product_execution"][
+            "pruned_reconciliation_state_refs"
+        ]
+    )
+    assert read_rows(output_dir / "facts.csv")[0]["legs"] != ""
 
 
 def _make_pdf(path: Path, *lines: str) -> None:
