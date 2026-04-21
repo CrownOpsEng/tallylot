@@ -114,10 +114,6 @@ The repo currently ships typed replacements for the current workflow capabilitie
   blocker outputs, additive cross-source corroboration sidecars, explicit
   `--as-of` target planning, offline-by-default checks, and optional provider
   hydration through separate balance-provider adapters
-- repo-native workspace replay validation via
-  `make validate-workspace-replay`
-  with optional expected-difference fixtures limited to issue and review count
-  drift
 - dev-only oracle baseline validation with the documented artifact package
 - dev-only oracle batch screening and staging with explicit issues, overlap
   summaries, and normalization window enforcement
@@ -125,10 +121,22 @@ The repo currently ships typed replacements for the current workflow capabilitie
 - dev-only oracle round scaffolding and round-log seeding
 - dev-only oracle source diff
 
+## Current Developer Validation Tooling
+
+- repo-native developer rebuild validation remains available via
+  `make validate-workspace-replay`
+  with optional expected-difference fixtures limited to issue and review count
+  drift
+- that tooling is for developer rebuild validation and migration proof only;
+  normal user workflows are intended to stay rerun-safe without a separate
+  rebuild-validation step
+
 ## Current Hard Rules
 
 - Raw evidence stays outside the repo in the external workspace.
 - Untouched source originals stay under `evidence/raw/source/`.
+- Normal user workflows are intended to stay rerun-safe and keep the fast path
+  on ordinary commands rather than on manual rebuild validation.
 - `source profile` and `source normalize` accept only one materialized raw
   capture root under `evidence/raw/source/<source>/<capture_label>/` with
   matching `capture.json` metadata. They reject source roots, arbitrary
@@ -181,10 +189,11 @@ The repo currently ships typed replacements for the current workflow capabilitie
 - `balance_snapshots.csv` and `balance_references.csv` are the only runtime
   balance artifacts. `balances.csv` and `balance_evidence.csv` are superseded
   generated outputs and are not runtime inputs.
-- `tools.validate_workspace_replay` compares capture-registry meaning parity,
-  raw capture completeness, assembled source metrics, and reconciliation status
-  counts. Optional expected-difference fixtures may declare only
-  `issue_count_delta`, `review_count_delta`, and `reason`.
+- `tools.validate_workspace_replay` remains repo-native developer validation
+  tooling for rebuild and migration proof. It compares capture-registry
+  meaning parity, raw capture completeness, assembled source metrics, and
+  reconciliation status counts. Optional expected-difference fixtures may
+  declare only `issue_count_delta`, `review_count_delta`, and `reason`.
 - Repo docs and repo-local agent entrypoints must describe only implemented
   commands and artifacts.
 

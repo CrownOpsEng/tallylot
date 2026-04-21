@@ -233,6 +233,32 @@ capability package the feature needs, such as application/reporting/,
 application/portfolio/, application/visualization/, or
 application/investigation/, rather than into a generic shared sink.
 
+### Rerun And Fast-Path Policy
+
+Normal product behavior must preserve the repo's fast path.
+
+Rules:
+
+- normal workflows are rerun-safe and transparent to the user
+- hot-path calculations must depend only on authoritative kernels and the
+  fields required for the active calculation path
+- provenance, explanations, reports, reviews, and other non-calculation detail
+  must stay in sidecars or other declared non-kernel payloads rather than in
+  the hot path
+- commands that own generated outputs rewrite their owned outputs on rerun
+  instead of appending stale generated rows
+- deterministic unchanged-input reruns are the normal product guarantee, not a
+  special repair workflow
+- when authoritative inputs change, every affected stage or partition must
+  rebuild automatically while unchanged partitions skip recalculation
+- rerun and skip behavior must prevent corruption of owned generated outputs
+  and must not discard manual adjustments outside the owned generated surface
+- when a workflow exposes a full-rebuild override command, it must bypass
+  cache or fingerprint skips safely and rebuild from the declared upstream
+  truth without destructive cleanup of unrelated operator-owned files
+- developer rebuild validation remains separate repo tooling and is not part of
+  normal user operation
+
 ## Naming Rules
 
 - Name modules after the bounded responsibility they own.

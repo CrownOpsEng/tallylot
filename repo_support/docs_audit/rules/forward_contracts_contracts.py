@@ -357,7 +357,7 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
         lambda: [
             (_ for _ in ()).throw(
                 AssertionError(
-                    f"{path.name} no longer freezes ids, compatibility views, parity gates, and replay gates"
+                    f"{path.name} no longer freezes ids, compatibility views, parity gates, and idempotent rerun guarantees"
                 )
             )
             for path in (
@@ -372,7 +372,7 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
                     "## Id And Fingerprint Rules",
                     "## Bridge Compatibility Views",
                     "## Parity Gates",
-                    "## Replay Gates",
+                    "## Idempotent Rerun Guarantees",
                 )
             )
             or (

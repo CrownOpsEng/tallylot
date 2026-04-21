@@ -44,6 +44,18 @@ These anchors drive sequencing and acceptance criteria:
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
 - current bridge names remain current-state truth until later implementation
   slices replace them
+- normal product reruns are automatic, idempotent, deterministic, and
+  transparent to the user
+- the fast path stays on ordinary reruns from authoritative persisted truth
+  rather than on manual rebuild workflows or special rerun hygiene
+- hot-path calculations stay on authoritative kernels and required hot-path
+  fields only; anything outside the calculation path stays in sidecars or
+  other declared non-kernel detail
+- when authoritative inputs change, the affected stages or partitions rerun
+  automatically while unchanged partitions skip recalculation
+- safe full-rebuild overrides may bypass skip heuristics only when they can
+  rebuild from the declared upstream truth without losing manual adjustments
+  outside the owned generated surface
 - CoinTracking remains an edge adapter and oracle surface, not the runtime
   ledger model
 - broader grouped and query surfaces remain deferred until the trigger ladder
@@ -57,6 +69,8 @@ These anchors drive sequencing and acceptance criteria:
 - avoid freezing the current bridge as the long-term architecture center
 - keep adapters and services shippable at every checkpoint
 - preserve current bridge truth while establishing target product ownership
+- prefer transparent rerun-safe behavior over rebuild-style operator workflows
+  when correcting downstream generated outputs
 - do not let bridge compatibility views become a second architecture
   center
 - do not let shared grouped readiness or shared application assessment behavior
@@ -149,6 +163,43 @@ authority and retained compatibility views:
 - [Product Outputs](docs/workspace/working/products/README.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
+## Phase 5A. Accounting Boundary And Automatic Rerun Correction
+
+Goal:
+
+- align the forward docs to the flat capability taxonomy
+- make `accounting` the owning capability and `Journal` its canonical product
+- confine the existing rebuild validator to developer-only guidance
+- define automatic idempotent rerun guarantees as the normal product behavior
+
+Detailed contract pages:
+
+- [Architecture Overview](docs/concepts/architecture-overview.md)
+- [Domain Ontology](docs/concepts/domain-ontology.md)
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](docs/concepts/reconciliation-tax-architecture.md)
+- [Bridge To Target Mapping](docs/concepts/bridge-to-target-mapping.md)
+- [Pipeline Stage Contracts](docs/concepts/pipeline-stage-contracts.md)
+- [Journal Contract](docs/reference/journal-contract.md)
+- [Target Persistence Reference](docs/reference/target-persistence-reference.md)
+- [Migration Sequence](docs/status/migration-sequence.md)
+
+Scope boundary:
+
+- forward docs only
+- no code or test changes
+- current-state truth remains accurate
+
+Exit criteria:
+
+- no forward-looking doc still routes Phase 6 through retired journal-root
+  package names or the retired journal backend-seam name
+- no forward-looking product contract still uses the older rerun heading or
+  product-facing rebuild framing
+- no user-facing guide presents the rebuild validator as a normal workflow
+- `portfolio`, `performance`, `reporting`, and `investigation` are the
+  reserved future semantic families
+- `visualization` is no longer reserved as a first-class capability
+
 ## Phase 6. Land `Journal`
 
 Goal:
@@ -202,6 +253,9 @@ Exit criteria:
   without changing journal authority or repairing data
 - later backends can replace `ledger_cli` without redefining journal ids,
   journal-owned check outcomes, or tax identity
+- no ledger-derived identity leaks into tax
+- no user-facing rebuild workflow or manual rerun hygiene is required to keep
+  the product healthy
 - detailed backend artifact, validation-lane, and cutover rules stay on the
   owner docs rather than in this planning surface
 
@@ -243,9 +297,9 @@ Implementation slices:
 
 Exit criteria:
 
-- `TaxInputs` and `TaxOutputs` replay from authoritative `Checkpoint`,
-  `EconomicFacts`, and selected tax-policy inputs without bridge facts,
-  `journal_ref`, or backend-derived identity
+- `TaxInputs` and `TaxOutputs` rerun deterministically from authoritative
+  `Checkpoint`, `EconomicFacts`, and selected tax-policy inputs without
+  bridge facts, `journal_ref`, or backend-derived identity
 - `2023` to `2025` outputs can be produced from reconciled economics and
   accepted checkpoint truth without treating CoinTracking tax reports as the
   ledger
@@ -348,7 +402,7 @@ Rules:
   actually uses
 - hot-path calculations should operate on compact kernel records instead of
   repeatedly joining provenance, review, or renderer detail
-- derived snapshots and reusable state should be introduced where replay cost
+- derived snapshots and reusable state should be introduced where rerun cost
   becomes material
 - tax work should support tax-year partitioning and tax carry-forward record reuse instead
   of recomputing full acquisition history for every output row
@@ -389,7 +443,7 @@ Rules:
 
 - maintain parser and adapter contract tests
 - expand compatibility-view parity tests
-- add replay coverage for target kernels and compatibility views
+- add deterministic rerun coverage for target kernels and compatibility views
 - add reconciliation parity and checkpoint continuity tests
 - add journal entry-check coverage
 - add tax policy coverage with explicit tax unsupported-input records

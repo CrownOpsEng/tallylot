@@ -26,7 +26,8 @@ Use this page for:
 - migration landing rules
 - reader and writer cutover expectations
 - bridge retirement rules
-- parity and replay gates that must hold before one surface is retired
+- parity and deterministic rerun gates that must hold before one surface is
+  retired
 
 Do not use this page for:
 
@@ -183,6 +184,32 @@ After those slices land, migrate readers one consumer surface at a time:
   outputs, or compatibility views until a later capability-specific increment
   requires a dedicated derived read-model slice
 
+### 4A. Accounting Boundary And Automatic Rerun Correction
+
+Before the journal slice lands, keep the forward contract surfaces aligned on
+one accounting boundary and one normal rerun posture.
+
+Rules:
+
+- current-state rebuild validation tooling remains developer-only
+- normal product behavior is automatic, idempotent rerun over owned generated
+  outputs
+- the fast path stays on ordinary reruns from authoritative persisted truth
+  rather than on rebuild-style operator workflows
+- hot-path calculations stay on authoritative kernels and required hot-path
+  fields only; unrelated detail stays in sidecars or other declared non-kernel
+  outputs
+- when authoritative inputs change, the affected stages or partitions rerun
+  automatically while unchanged partitions skip recalculation
+- safe full-rebuild overrides may bypass cache or fingerprint skips only when
+  they can rebuild from the declared upstream truth without losing manual
+  adjustments outside the owned generated surface
+- forward package and capability ownership is corrected to `accounting`
+  without changing the canonical `Journal` product name
+- the journal backend seam becomes the accounting backend seam
+- later cutover gates use deterministic rerun and parity proof rather than
+  product-facing rebuild workflows or special rerun hygiene
+
 ### 5. Journal Contract
 
 Land the bounded [Journal Contract](../reference/journal-contract.md) only
@@ -284,13 +311,13 @@ Bridge retirement is therefore:
 - per reader, not just per writer
 - controlled by cutover gates, not by naming preference
 
-## Parity And Replay Gates
+## Parity And Deterministic Rerun Gates
 
 Do not retire an older path until all relevant gates pass:
 
 - adapter or parser contract tests for the affected slice
 - compatibility-view parity tests for every retained compatibility view
-- target-kernel replay checks for the authoritative product
+- target-kernel deterministic rerun checks for the authoritative product
 - reconciliation or checkpoint parity where the slice reaches those stages
 - end-to-end smoke coverage for the affected workflow
 

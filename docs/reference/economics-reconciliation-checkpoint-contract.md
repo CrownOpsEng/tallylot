@@ -18,8 +18,9 @@ related:
 
 Use this page when implementing or reviewing the bounded economics,
 reconciliation, and checkpoint contract after the bounded
-`EvidenceSet -> ClaimSet` contract. This document freezes scope, ids, parity,
-replay, and allowed drift for the bounded
+`EvidenceSet -> ClaimSet` contract. This document freezes scope, ids,
+compatibility views, parity gates, idempotent rerun guarantees, and allowed
+drift for the bounded
 `EconomicFacts -> ReconciliationState -> Checkpoint` increment.
 
 **Contract-local example:** This contract still uses Coinbase retail activity
@@ -315,9 +316,9 @@ following:
 - balance inspect/check/summarize output for evidence in this slice
 - `cointracking_csv` row ordering and field values
 
-## Replay Gates
+## Idempotent Rerun Guarantees
 
-The slice is replay-safe only when repeated runs on unchanged evidence preserve:
+The slice is rerun-safe only when repeated runs on unchanged evidence preserve:
 
 - identical `EconomicFacts` kernel fingerprints
 - identical `ReconciliationState` kernel fingerprints
@@ -329,7 +330,7 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical balance inspect/check/summarize output for supported slice subjects
 - identical `cointracking_csv` output for supported bridge facts
 
-Replay checks must also prove that incidental input ordering changes do not
+Rerun checks must also prove that incidental input ordering changes do not
 change event ids, leg ids, continuity segment ids, balance target ids,
 checkpoint proposal ids, checkpoint assertion ids, or rendered output.
 

@@ -160,19 +160,8 @@ make cli ARGS='source assemble \
 known generated files without deleting unrelated operator-owned files beside
 them.
 
-## Validate A Rebuilt Workspace
-
-When you need to confirm that a rebuilt workspace reproduces a reference
-workspace cleanly, run the replay validator:
-
-```bash
-make validate-workspace-replay ARGS='\
-  --reference-workspace <reference-workspace> \
-  --report-dir <workspace>/working/supporting_artifacts/workspace_replay/<run_label>'
-```
-
-Add `--candidate-workspace` and `--source` when you need to constrain the
-comparison. Review the parity report before treating the rebuild as clean.
+Developer rebuild validation remains available for migration proof and repo-side
+investigation, but it is not part of the normal operator intake flow.
 
 Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the next
 step after the settled capture has been profiled and normalized.

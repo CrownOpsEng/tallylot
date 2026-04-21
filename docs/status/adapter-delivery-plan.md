@@ -42,7 +42,7 @@ Allowed now:
 - shared evidence-kind recognition and statement extraction improvements
 - explicit timezone review behavior
 - strict output-policy validation for filing outputs such as `cointracking_csv`
-- replay-grade verification for unchanged filing inputs
+- deterministic unchanged-input verification for filing-critical adapters
 
 Not allowed now:
 
@@ -107,7 +107,7 @@ The filing window should focus on:
   it
 - keeping timezone handling explicit
 - strengthening deterministic output validation for filing outputs
-- maintaining replay-grade verification for unchanged inputs
+- maintaining automatic rerun-safe behavior for unchanged filing inputs
 
 Exit criteria for the filing window:
 
