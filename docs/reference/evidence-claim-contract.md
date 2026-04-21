@@ -1,6 +1,6 @@
 ---
 title: "Evidence And Claim Contract"
-summary: "Contract for the bounded `EvidenceSet -> ClaimSet` increment, including cardinality, ids, replay gates, and bridge compatibility views."
+summary: "Contract for the bounded `EvidenceSet -> ClaimSet` increment, including cardinality, ids, idempotent rerun guarantees, and bridge compatibility views."
 doc_type: reference
 audience: human
 owner: repo
@@ -17,8 +17,9 @@ related:
 ---
 
 Use this page when implementing or reviewing the bounded evidence-and-claim contract.
-This document freezes scope, cardinality, ids, parity, replay, and allowed
-drift for the bounded `EvidenceSet -> ClaimSet` increment. The
+This document freezes scope, cardinality, ids, compatibility views, parity
+gates, idempotent rerun guarantees, and allowed drift for the bounded
+`EvidenceSet -> ClaimSet` increment. The
 `EvidenceSet` side of that contract is already the live runtime authority for
 the in-scope evidence slice; `ClaimSet` is the remaining upstream authority
 slice in this contract.
@@ -319,9 +320,9 @@ Unchanged evidence must preserve all of the following:
 - `EconomicActivityDraft` ordering and content for evidence in this slice
 - `SourceTranslationBatch` content for evidence in this slice
 
-## Replay Gates
+## Idempotent Rerun Guarantees
 
-The slice is replay-safe only when repeated runs on unchanged evidence preserve:
+The slice is rerun-safe only when repeated runs on unchanged evidence preserve:
 
 - identical selected, superseded, and blocked retail-export partitions
 - identical statement recognition outcomes
@@ -330,7 +331,7 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical `EconomicActivityDraft` content for evidence in this slice
 - identical `SourceTranslationBatch` content for evidence in this slice
 
-Replay checks must also prove that incidental input ordering changes do not
+Rerun checks must also prove that incidental input ordering changes do not
 change evidence selection, claim order, claim-bundle order,
 claim-bundle decisions, or
 claim-side compatibility output.

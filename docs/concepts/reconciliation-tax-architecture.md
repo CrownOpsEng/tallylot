@@ -55,6 +55,7 @@ Use these pages for the detailed neighboring contracts:
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
 - [Evidence And Claim Contract](../reference/evidence-claim-contract.md)
 - [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
+- [Journal Contract](../reference/journal-contract.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
 - [Gap, Review, And Shared Attachment](gaps-and-reviews.md)
@@ -76,16 +77,35 @@ Trust and ownership rules:
 - reconciliation is the trust gate before checkpoint adoption, downstream
   journal emission, and tax
 - accepted checkpoint truth has explicit acceptance basis
-- `Journal` expands accepted truth and runs entry checks; it does not repair
-  truth
+- `Journal` is the canonical downstream accounting product; it expands
+  accepted truth and runs entry checks without repairing truth
 - `TaxInputs` assemble policy-ready inputs from reconciled economics plus
   accepted checkpoint truth
 - selected tax policies decide treatment in `TaxOutputs`; they do not decide
   source meaning, reconciliation truth, checkpoint truth, or journal outcomes
 - `TaxOutputs` may own tax-policy output content needed for the active tax path,
   but that exception does not make it the long-term home of general reporting,
-  dashboards, portfolio views, visualization datasets, or investigation
+  dashboards, portfolio views, performance datasets, or investigation
   workflows
+
+### Journal And Tax Rollout Posture
+
+- the repo lands `Journal` before `TaxInputs` so canonical journal expansion,
+  repo-owned entry checks, and backend posture stabilize before tax-specific
+  planning widens
+- `accounting` is the owning capability for canonical journal construction,
+  backend orchestration, and bounded accounting inspection
+- `ledger_cli` is the first accounting backend id, while `ledger-cli`
+  remains the first downstream corroboration and inspection tool only
+- the accounting backend seam is intentionally replaceable, so later
+  repo-owned code or another backend may replace `ledger_cli` without
+  redefining authoritative `Journal` meaning
+- `Journal` becomes authoritative for journal-native renderers, bounded
+  accounting inspection, repo-owned entry checks, and journal-owned gaps only;
+  it does not become a required upstream product ref for tax
+- `TaxInputs` and `TaxOutputs` may inspect declared journal detail or backend
+  findings only as non-authoritative downstream detail; they do not add
+  `journal_ref`, backend file hashes, or backend-local ids to tax identity
 
 ## Source, Output, Oracle, And Persistence Boundaries
 
@@ -107,6 +127,13 @@ Trust and ownership rules:
 - renderers consume downstream-owned products or approved compatibility
   views
 - renderer-specific constraints stay at the edge
+- `ledger_cli` stays a derived accounting backend that corroborates and
+  inspects generated `Journal` artifacts
+- ledger artifacts are derived accounting outputs only; they never become
+  authoritative persistence or a cross-capability query authority
+- accounting backends consume canonical truth and never redefine it
+- journal-backend findings stay backend-local and do not redefine canonical
+  `Journal` semantics
 - CoinTracking row rules remain output-adapter concerns only
 
 ### Oracle Boundaries
@@ -233,6 +260,10 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/products/reconciliation_states/<reconciliation_state_id>/reconciliation_state.json`
 - `working/products/checkpoints/<checkpoint_id>/checkpoint.json`
 - `working/products/journals/<journal_id>/journal.json`
+- `working/products/journals/<journal_id>/journal_posting_explanations.json`
+- `working/products/journals/<journal_id>/journal_entry_check_reports.json`
+- `working/products/journals/<journal_id>/backends/ledger_cli/journal.ledger`
+- `working/products/journals/<journal_id>/backends/ledger_cli/validation_findings.json`
 - `working/products/tax_inputs/<tax_inputs_id>/tax_inputs.json`
 - `working/products/tax_outputs/<tax_outputs_id>/tax_outputs.json`
 - stage-owned shared assessment sidecars live beside the authoritative kernel
@@ -259,6 +290,14 @@ Rules:
   files
 - authoritative target kernels use product-owned directory stems rather than
   migration-era source or checkpoint containers
+- product-local detail files stay beside the authoritative kernel using
+  explicit owning-product basenames
+- accounting backend artifacts stay under `backends/<backend_id>/`, and
+  `backends/` is allowed only because it splits immediately into backend-id
+  families such as `ledger_cli/`
+- human-readable inspection outputs from bounded `ledger-cli` operations such
+  as `print`, `accounts`, `balance`, and `register` are generated on demand
+  and are not durable Phase 6 artifacts
 - source-scoped or checkpoint-scoped workspace groupings remain valid only for
   current-state surfaces, compatibility views, or genuinely source-owned
   or checkpoint-owned packages
@@ -278,8 +317,8 @@ Rules:
 
 ## Performance Rules
 
-The target pipeline must stay auditable, deterministic, replayable, and fast
-enough for large-scale calculation.
+The target pipeline must stay auditable, deterministic, idempotent on rerun,
+and fast enough for large-scale calculation.
 
 ### Hot Path
 
@@ -328,7 +367,7 @@ Reducers must use stable ordering:
 Rules:
 
 - reducers must be deterministic
-- replay must be consistent across runs
+- reruns must be consistent across runs
 - ordering must not depend on incidental file order
 
 ### Partitioning
@@ -364,6 +403,17 @@ Rules:
   group is not allowed
 - full-history rescans per target are not allowed when a bounded partition or
   reusable materialized state exists
+- normal reruns rewrite the owned generated outputs for the affected stage or
+  partition
+- normal reruns do not require user intervention to keep generated state
+  healthy
+- backend reruns do not force unnecessary upstream rebuilds when authoritative
+  upstream truth is unchanged
+- full-rebuild overrides may bypass cache or fingerprint skips only when they
+  rerun from the declared upstream truth without losing manual adjustments
+  outside the owned generated surface
+- backend validation and bounded accounting inspection run from persisted
+  canonical accounting state
 
 ### Assessment, Product-Local Detail, Compatibility, And Derived Outputs
 
@@ -423,6 +473,6 @@ or tax, ask:
 - can unmigrated consumers survive on compatibility views alone
 - can migrated consumers read target products without bridge lookups
 - is every hot-path field present in the kernel rather than in a sidecar
-- can the stage replay deterministically from its upstream authorities
+- can the stage rerun deterministically from its upstream authorities
 
 If the answer to any of these is no, the design is not ready.

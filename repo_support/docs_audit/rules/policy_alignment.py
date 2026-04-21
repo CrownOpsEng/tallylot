@@ -160,7 +160,7 @@ POLICY_ALIGNMENT_RULES = (
             for reserved_path in (
                 "application/reporting/",
                 "application/portfolio/",
-                "application/visualization/",
+                "application/performance/",
                 "application/investigation/",
             )
             if reserved_path not in repo_text("ROADMAP.md")

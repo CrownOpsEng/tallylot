@@ -9,9 +9,9 @@ naming_scope: forward_target
 nav_order: 10
 ---
 
-TallyLot is a typed Python package and CLI for evidence intake,
-reconciliation, checkpoint acceptance, journal entry checks, rendering, and
-tax computation.
+TallyLot is a typed Python package and CLI with a flat target capability
+taxonomy across evidence, economics, reconciliation, accounting, tax, and
+later capability-owned semantic read-model families.
 
 ## Runtime Posture
 
@@ -29,10 +29,28 @@ The target runtime pipeline is:
 
 `EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
+The target authority chain is:
+
+- upstream evidence and economic truth
+- checkpoint acceptance
+- canonical accounting journal
+- derived accounting backend artifacts
+- later semantic read models owned by their specific capabilities
+
 Within that pipeline, `EvidenceSet` and `ClaimSet` are already the implemented
 authorities for the bounded planner-enabled Coinbase slice. `EconomicFacts`,
 `ReconciliationState`, and `Checkpoint` are authorities for the bounded
 downstream Coinbase slice, while direct reader cutovers remain later work.
+
+For that implemented downstream slice,
+[Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
+holds the detailed downstream contract,
+[Migration Sequence](../status/migration-sequence.md) owns current cutover and
+retirement rules, and
+[Product Outputs](../workspace/working/products/README.md) owns current
+workspace placement of authoritative kernels plus retained compatibility
+views. [Current State](../status/current-state.md) remains the live runtime
+truth page.
 
 The primary contract pages freeze product ids, product headers, critical-path
 kernel field tables, and the compatibility sidecar boundary for retained legacy
@@ -40,8 +58,8 @@ hint fields.
 
 Broader consumer-facing grouped or query surfaces remain intentionally
 deferred. Through the tax-first path, grouped outputs may remain only as
-tax-output-local derived content, narrow rendering-derived content, or
-compatibility-local derived output rather than as a shared application center.
+tax-output-local derived content, narrow rendering-local derived content, or
+compatibility-local derived output rather than as a shared application center;
 broader derived read models and projections stay deferred until a later
 capability-specific increment makes them necessary.
 
@@ -55,6 +73,12 @@ package is activated.
 
 - `domain/` owns business models, refs, enums, and value objects
 - `application/` owns use-case orchestration over domain models and ports
+- `application/accounting/` is the future owning capability for accounting
+  semantics
+- `Journal` is the canonical downstream accounting product emitted by that
+  capability
+- `application/rendering/` stays thin and format-oriented; it does not own
+  report meaning
 - `ports/` defines narrow typed boundaries
 - `infrastructure/` implements ports
 - `adapters/` translates source and output formats
@@ -77,6 +101,7 @@ These pages define the primary current-state and forward-looking contracts:
 | [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md) | reconciliation, checkpoint, journal, and tax trust gates plus persistence, partitioning, and fast-path rules |
 | [Evidence And Claim Contract](../reference/evidence-claim-contract.md) | current bounded `EvidenceSet -> ClaimSet` contract scope |
 | [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md) | current bounded `EconomicFacts -> ReconciliationState -> Checkpoint` contract scope |
+| [Journal Contract](../reference/journal-contract.md) | bounded contract for the canonical accounting journal and the first ledger backend seam |
 | [ROADMAP.md](../../ROADMAP.md) | planning-only sequencing and later rollout detail |
 | [Current State](../status/current-state.md) | implemented runtime truth and live package layout |
 
@@ -91,4 +116,5 @@ Supporting id, ref, persistence, and workspace references remain under
 - [Domain Ontology](domain-ontology.md)
 - [Gap, Review, And Shared Attachment](gaps-and-reviews.md)
 - [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md)
+- [Journal Contract](../reference/journal-contract.md)
 - [Current State](../status/current-state.md)

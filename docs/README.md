@@ -35,6 +35,7 @@ persistence and migration references, and repo standards.
 - [Reconciliation, checkpoint, journal, and tax architecture](concepts/reconciliation-tax-architecture.md)
 - [Evidence and claim contract](reference/evidence-claim-contract.md)
 - [Economics reconciliation checkpoint contract](reference/economics-reconciliation-checkpoint-contract.md)
+- [Journal contract](reference/journal-contract.md)
 - [Engineering standards](standards/engineering.md)
 - [Workspace model](concepts/workspace-model.md)
 
@@ -80,10 +81,11 @@ canonical target naming.
 <!-- docs-maintenance:start reference -->
 ### Target References
 
-- [Evidence And Claim Contract](reference/evidence-claim-contract.md): Contract for the bounded `EvidenceSet -> ClaimSet` increment, including cardinality, ids, replay gates, and bridge compatibility views.
+- [Evidence And Claim Contract](reference/evidence-claim-contract.md): Contract for the bounded `EvidenceSet -> ClaimSet` increment, including cardinality, ids, idempotent rerun guarantees, and bridge compatibility views.
 - [Economics Reconciliation Checkpoint Contract](reference/economics-reconciliation-checkpoint-contract.md): Contract for the bounded `EconomicFacts -> ReconciliationState -> Checkpoint` increment, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views.
 - [Target Ids And Refs](reference/target-ids-and-refs.md): Reusable target ids and ref tuples that are shared across target contracts.
 - [Target Persistence Reference](reference/target-persistence-reference.md): Target persistence, partition-scope, and compatibility placement reference.
+- [Journal Contract](reference/journal-contract.md): Contract for the bounded `Journal` increment, including entry expansion, repo-owned entry checks, accounting backend handoff, and downstream tax boundary rules.
 
 ### Current-State References
 

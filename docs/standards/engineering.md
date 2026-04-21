@@ -128,16 +128,15 @@ When a capability grows, split by stable boundaries:
   Forward-looking target work should keep identity families split under
   roots such as `domain/instrument/`, `domain/location/`,
   `domain/ownership/`, `domain/counterparty/`, `domain/contract/`,
-  `domain/position/`, `domain/evidence/`, `domain/claim/`,
-  `domain/assessment/`, `domain/reconciliation/`, `domain/checkpoint/`,
-  `domain/journal/`, and `domain/tax/` rather than recreating umbrella roots.
+  `domain/position/`, `domain/evidence/`, `domain/assessment/`,
+  `domain/reconciliation/`, `domain/accounting/`, and `domain/tax/`
+  rather than recreating umbrella roots.
 - **Anti-example:** Do not recreate umbrella roots such as `domain/entities/`.
 - `application/`: organize by bounded capability packages such as
   `application/intake/`, `application/profiling/`, `application/evidence/`,
-  `application/claim/`, `application/economics/`,
-  `application/compatibility/`, `application/normalization/`,
-  `application/reconciliation/`, `application/checkpoint/`,
-  `application/journal/`, `application/tax/`, and
+  `application/economics/`, `application/compatibility/`,
+  `application/normalization/`, `application/reconciliation/`,
+  `application/accounting/`, `application/tax/`, and
   `application/rendering/`. Keep request and response contracts in
   capability-local `contracts.py` files and keep orchestration entry points in
   explicitly named use-case modules such as `build_profile.py`,
@@ -202,8 +201,8 @@ Current application of this rule:
   under `domain/assessment/` while the owning application slice keeps its own
   assessment behavior and readiness views.
 - Forward-looking journal expansion and entry checks belong under
-  `application/journal/` rather than under a broader `accounting/` umbrella or
-  as extra checkpoint-side helpers.
+  `application/accounting/` because `accounting` is the owning capability for
+  the canonical `Journal` product and its backend orchestration.
 - Rendering belongs under `application/rendering/`; CoinTracking is one
   output adapter, not an application-center compatibility lane.
 - Dev-only oracle tooling must live outside `src/tallylot/`.
@@ -223,15 +222,44 @@ Extraction is mandatory before implementation when any of these are true:
 - a second grouped non-compatibility consumer appears
 - a grouped non-authoritative surface needs durable persistence outside tax
   outputs or compatibility
-- a feature clearly belongs to reporting, portfolio, visualization, or
+- a feature clearly belongs to reporting, portfolio, performance, or
   investigation
 - grouped output logic would otherwise be copied into a second stage package or
   consumer
 
 When extraction becomes mandatory, move that behavior into the specific
-capability package the feature needs, such as application/reporting/,
-application/portfolio/, application/visualization/, or
-application/investigation/, rather than into a generic shared sink.
+capability package the feature needs, such as `application/reporting/`,
+`application/portfolio/`, `application/performance/`, or
+`application/investigation/`, rather than into a generic shared sink.
+
+### Rerun And Fast-Path Policy
+
+Normal product behavior must preserve the repo's fast path.
+
+Rules:
+
+- normal workflows are rerun-safe and transparent to the user
+- hot-path calculations must depend only on authoritative kernels and the
+  fields required for the active calculation path
+- provenance, explanations, reports, reviews, and other non-calculation detail
+  must stay in sidecars or other declared non-kernel payloads rather than in
+  the hot path
+- commands that own generated outputs rewrite their owned outputs on rerun
+  instead of appending stale generated rows
+- deterministic unchanged-input reruns are the normal product guarantee, not a
+  special repair workflow
+- when authoritative inputs change, every affected stage or partition must
+  rebuild automatically while unchanged partitions skip recalculation
+- rerun and skip behavior must prevent corruption of owned generated outputs
+  and must not discard manual adjustments outside the owned generated surface
+- when a workflow exposes a full-rebuild override command, it must bypass
+  cache or fingerprint skips safely and rebuild from the declared upstream
+  truth without destructive cleanup of unrelated operator-owned files
+- developer rebuild validation remains separate repo tooling and is not part of
+  normal user operation
+- semantic query and read models belong to the owning capability
+- `application/rendering/` is format-only, and `outputs` plus `rendering`
+  must not become semantic report buckets
 
 ## Naming Rules
 
@@ -268,12 +296,13 @@ application/investigation/, rather than into a generic shared sink.
 - Prefer the shortest stable stage noun for stage-owned package stems. Use a
   plural package stem only when the plural is itself the natural domain noun;
   do not pluralize a package just because it holds several records. For
-  example, `application/checkpoint/` and `domain/checkpoint/` are clearer than
-  looser collection labels.
+  example, `application/accounting/` and `domain/accounting/` are clearer than
+  looser collection labels when the capability owns canonical accounting
+  semantics.
 - Keep that package-stem rule aligned with the contract family. For example,
-  `application/claim/` and `domain/claim/` stay aligned with `ClaimSet`,
-  `claim_scope_id`, `claim_bundle_id`, and `claim_id` better than a pluralized
-  `claims/` package stem.
+  `application/evidence/` and `domain/evidence/` stay aligned with
+  `EvidenceSet`, `ClaimSet`, `claim_scope_id`, `claim_bundle_id`, and
+  `claim_id` better than a scattered mix of narrower package roots.
 - Natural domain-noun package roots such as `economics/`, `profiling/`, and
   `rendering/` are allowed when the shorter adjective form would be less clear.
   Treat those as narrow exceptions, not permission for loose plural package
@@ -288,12 +317,13 @@ application/investigation/, rather than into a generic shared sink.
 - Prefer explicit identity-family package roots over umbrella containers once
   the owned families are already known. Use roots such as `instrument/`,
   `location/`, `ownership/`, `counterparty/`, `contract/`, `position/`,
-  `assertion/`, and `journal/` instead of broader labels such as `entities/`,
-  `assertions/`, or `accounting/` when the repo already owns the narrower
+  `assertion/`, and `accounting/` instead of broader labels such as
+  `entities/` or `assertions/` when the repo already owns the narrower
   boundary.
-- Use `journal` for the end-state downstream stage, package, and
-  product-adjacent family noun. Reserve `accounting` for broader prose,
-  external schemas, or current bridge hints such as `AccountingIntentHint`.
+- Use `Journal` for the end-state accounting product and product-adjacent
+  family noun. Use `accounting` for the end-state downstream capability and
+  package noun, and keep bridge hints such as `AccountingIntentHint`
+  bridge-local.
 - Name bounded contract references by capability rather than by a bare
   ordinal.
   Prefer `Evidence And Claim Contract` and `Economics Reconciliation Checkpoint Contract`

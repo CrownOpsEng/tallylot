@@ -13,6 +13,7 @@ related:
   - docs/concepts/gaps-and-reviews.md
   - docs/reference/evidence-claim-contract.md
   - docs/reference/economics-reconciliation-checkpoint-contract.md
+  - docs/reference/journal-contract.md
   - docs/status/migration-sequence.md
   - ROADMAP.md
 ---
@@ -38,6 +39,9 @@ Use these pages for neighboring contracts:
   product kernels, ids, ordering, serialization, and fingerprints for
   `EvidenceSet`, `ClaimSet`, `EconomicFacts`, `ReconciliationState`,
   `Checkpoint`, `Journal`, `TaxInputs`, and `TaxOutputs`.
+- [Journal Contract](../reference/journal-contract.md) defines the bounded
+  `Journal` cutover, backend artifact layout, deterministic rerun rules, and
+  downstream tax boundary.
 - [Gap, Review, And Shared Attachment](gaps-and-reviews.md) defines
   `GapRecord`, `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
   `SubjectRef`, and `kernel_scope_id`.
@@ -88,7 +92,7 @@ No-dual-center rule:
   migration
 - none of those surfaces may remain a second architecture center once the
   corresponding target product is authoritative for that scope
-- broader grouped consumers stay on authoritative kernels, compatibility views, or tax-output-local and rendering-local derived outputs while broader derived read models and projections stay deferred, and they move only when a later capability-specific increment requires a dedicated derived read-model slice
+- broader grouped consumers stay on authoritative kernels, compatibility views, or tax-output-local and rendering-local derived outputs while broader derived read models and projections stay deferred, and those later capability-owned surfaces move only when a later capability-specific increment requires a dedicated read-model slice
 - the bounded economics/reconciliation/checkpoint contract is now implemented
   for planner-enabled Coinbase normalization, so `TransactionFact`,
   `facts.csv`, `balance_snapshots.csv`, and `balance_references.csv` are
@@ -215,6 +219,31 @@ Required cutovers now:
 - current balance inspect/check/summarize remains on bridge compatibility
   views until those application surfaces are repointed to target products
 
+## Later Downstream Product Cutovers
+
+`Journal`, `TaxInputs`, and `TaxOutputs` introduce new target-native
+downstream authorities rather than replacing one same-scope bridge file. They
+still require explicit reader cutover declarations.
+
+Rules:
+
+- `Journal` becomes authoritative as the canonical accounting product for
+  journal entry expansion, entry checks, journal-owned gaps, and
+  journal-native renderers as soon as it is persisted
+- `ledger_cli` is the first backend surface that reads `Journal` directly and
+  emits declared backend artifacts under `backends/ledger_cli/`
+- downstream readers that need backend findings read the declared backend
+  artifacts for that backend family rather than reconstructing that meaning
+  from bridge facts, checkpoint helpers, or output-local hints
+- `TaxInputs` and `TaxOutputs` become authoritative only for their own
+  stage-owned consumers; they do not retroactively redefine `Checkpoint`,
+  `EconomicFacts`, or journal identity
+- current compatibility renderers such as `cointracking_csv` remain on
+  compatibility outputs until a later increment explicitly repoints them
+- later downstream slices still need cutover gates for authoritative writer,
+  authoritative reader, deterministic rerun proof, and current-state docs
+  whenever implemented behavior changes
+
 ## Retirement Discipline
 
 No bridge surface is retired until all of the following are true:
@@ -222,7 +251,8 @@ No bridge surface is retired until all of the following are true:
 - the authoritative target product for the affected scope is persisted
 - every active reader for that scope has a declared target reader or derived
   compatibility reader
-- parity and replay gates for the affected slice pass on unchanged evidence
+- parity and deterministic rerun gates for the affected slice pass on
+  unchanged evidence
 - current-state docs are updated if the live runtime surface actually changed
 
 Bridge retirement is therefore per scope and per reader, not one repo-wide

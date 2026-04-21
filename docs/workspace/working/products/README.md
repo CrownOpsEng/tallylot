@@ -25,9 +25,8 @@ Current runtime surface:
   `assessment/review/` store deterministic claim-stage gap and review sidecars,
   even when those arrays are empty
 - `working/products/claim_sets/<claim_set_id>/compatibility/draft_projection_fields.json`
-  stores the retained bridge-only draft projection fields and compatibility
-  annotation payloads used to rebuild `EconomicActivityDraft`,
-  `SourceTranslationBatch`, and downstream compatibility annotations
+  stores the retained bridge-only draft projection fields used to rebuild
+  `EconomicActivityDraft` and `SourceTranslationBatch`
 - `working/products/economic_facts/<economic_facts_id>/economic_facts.json`
   is the authoritative `EconomicFacts` kernel for the bounded downstream
   Coinbase slice, with `compatibility/facts.csv` and
@@ -42,4 +41,8 @@ Current runtime surface:
 
 The normalized capture output under `working/normalized/captures/<capture_uid>/`
 may still mirror retained compatibility files for current readers, but the
-authoritative kernel lives here when a product is authoritative.
+authoritative kernel lives here when a product is authoritative. For the
+bounded planner-enabled Coinbase slice, `EconomicFacts`,
+`ReconciliationState`, and `Checkpoint` now live here as the authoritative
+downstream product directories, while current readers may still consume
+capture-scoped compatibility files derived from those kernels.

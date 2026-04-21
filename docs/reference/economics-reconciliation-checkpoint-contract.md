@@ -18,14 +18,36 @@ related:
 
 Use this page when implementing or reviewing the bounded economics,
 reconciliation, and checkpoint contract after the bounded
-`EvidenceSet -> ClaimSet` contract. This document freezes scope, ids, parity,
-replay, and allowed drift for the bounded
+`EvidenceSet -> ClaimSet` contract. This document freezes scope, ids,
+compatibility views, parity gates, idempotent rerun guarantees, and allowed
+drift for the bounded
 `EconomicFacts -> ReconciliationState -> Checkpoint` increment.
 
 **Contract-local example:** This contract still uses Coinbase retail activity
 and recognized Coinbase statement examples only to pin the current parity
 boundary. Those provider names are contract-local examples, not canonical
 target naming.
+
+## Implemented Slice Ownership
+
+This bounded downstream slice is now implemented for the planner-enabled
+Coinbase normalization path.
+
+Use these documents together when updating that implemented slice:
+
+- [Current State](../status/current-state.md) for live runtime truth and the
+  current package layout
+- [Architecture Overview](../concepts/architecture-overview.md) for
+  system-level routing of downstream authority and retained compatibility
+  views
+- [Migration Sequence](../status/migration-sequence.md) for reader cutover and
+  bridge-retirement rules
+- [Product Outputs](../workspace/working/products/README.md) for current
+  workspace placement of authoritative kernels and retained compatibility views
+
+Keep future changes to implemented economics, reconciliation, or checkpoint
+authority on those documents rather than re-expanding planning-only downstream
+notes elsewhere.
 
 ## Slice Scope
 
@@ -294,9 +316,9 @@ following:
 - balance inspect/check/summarize output for evidence in this slice
 - `cointracking_csv` row ordering and field values
 
-## Replay Gates
+## Idempotent Rerun Guarantees
 
-The slice is replay-safe only when repeated runs on unchanged evidence preserve:
+The slice is rerun-safe only when repeated runs on unchanged evidence preserve:
 
 - identical `EconomicFacts` kernel fingerprints
 - identical `ReconciliationState` kernel fingerprints
@@ -308,7 +330,7 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical balance inspect/check/summarize output for supported slice subjects
 - identical `cointracking_csv` output for supported bridge facts
 
-Replay checks must also prove that incidental input ordering changes do not
+Rerun checks must also prove that incidental input ordering changes do not
 change event ids, leg ids, continuity segment ids, balance target ids,
 checkpoint proposal ids, checkpoint assertion ids, or rendered output.
 

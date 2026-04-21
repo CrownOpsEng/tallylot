@@ -192,33 +192,29 @@ canonical_families:
       id: tax_unsupported_input_id
       refs: []
   package_paths:
-    - application/claim/
-    - application/checkpoint/
+    - application/accounting/
     - application/compatibility/
     - application/economics/
     - application/evidence/
     - application/intake/
-    - application/journal/
     - application/investigation/
     - application/normalization/
+    - application/performance/
     - application/portfolio/
     - application/profiling/
     - application/reconciliation/
     - application/reporting/
     - application/rendering/
     - application/tax/
-    - application/visualization/
     - application/workspace/
+    - domain/accounting/
     - domain/assessment/
     - domain/assertion/
-    - domain/claim/
-    - domain/checkpoint/
     - domain/contract/
     - domain/counterparty/
     - domain/economics/
     - domain/evidence/
     - domain/instrument/
-    - domain/journal/
     - domain/location/
     - domain/ownership/
     - domain/position/
@@ -435,22 +431,6 @@ identifier_context_rules:
     mode: local_short
     canonical_ids:
       - checkpoint_assertion_id
-  - path: docs/concepts/pipeline-stage-contracts.md
-    section_path:
-      - Journal
-    region_label: Record families
-    surface_kind: field_slot
-    mode: local_short
-    canonical_ids:
-      - entry_check_id
-  - path: docs/concepts/pipeline-stage-contracts.md
-    section_path:
-      - Journal
-    region_label: Ordering
-    surface_kind: array_component
-    mode: local_short
-    canonical_ids:
-      - entry_check_id
   - path: docs/reference/economics-reconciliation-checkpoint-contract.md
     section_path:
       - Id And Fingerprint Rules

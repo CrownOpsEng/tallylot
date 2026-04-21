@@ -14,6 +14,7 @@ This file is the forward planning document for the repo.
   - [`docs/concepts/reconciliation-tax-architecture.md`](docs/concepts/reconciliation-tax-architecture.md)
   - [`docs/reference/evidence-claim-contract.md`](docs/reference/evidence-claim-contract.md)
   - [`docs/reference/economics-reconciliation-checkpoint-contract.md`](docs/reference/economics-reconciliation-checkpoint-contract.md)
+  - [`docs/reference/journal-contract.md`](docs/reference/journal-contract.md)
   - [`docs/status/migration-sequence.md`](docs/status/migration-sequence.md)
 
 This roadmap tracks the implementation program from the current bridge toward
@@ -43,6 +44,18 @@ These anchors drive sequencing and acceptance criteria:
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
 - current bridge names remain current-state truth until later implementation
   slices replace them
+- normal product reruns are automatic, idempotent, deterministic, and
+  transparent to the user
+- the fast path stays on ordinary reruns from authoritative persisted truth
+  rather than on manual rebuild workflows or special rerun hygiene
+- hot-path calculations stay on authoritative kernels and required hot-path
+  fields only; anything outside the calculation path stays in sidecars or
+  other declared non-kernel detail
+- when authoritative inputs change, the affected stages or partitions rerun
+  automatically while unchanged partitions skip recalculation
+- safe full-rebuild overrides may bypass cache or fingerprint skips only when
+  they can rebuild from the declared upstream truth without losing manual
+  adjustments outside the owned generated surface
 - CoinTracking remains an edge adapter and oracle surface, not the runtime
   ledger model
 - broader grouped and query surfaces remain deferred until the trigger ladder
@@ -56,6 +69,8 @@ These anchors drive sequencing and acceptance criteria:
 - avoid freezing the current bridge as the long-term architecture center
 - keep adapters and services shippable at every checkpoint
 - preserve current bridge truth while establishing target product ownership
+- prefer transparent rerun-safe behavior over rebuild-style operator workflows
+  when correcting downstream generated outputs
 - do not let bridge compatibility views become a second architecture
   center
 - do not let shared grouped readiness or shared application assessment behavior
@@ -148,23 +163,127 @@ authority and retained compatibility views:
 - [Product Outputs](docs/workspace/working/products/README.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
-## Phase 6. Land `Journal`
+## Phase 5A. Accounting Boundary And Automatic Rerun Correction
 
 Goal:
 
-- make journal expansion and entry checks a first-class downstream stage
+- align the forward docs to the flat capability taxonomy
+- make `accounting` the owning capability and `Journal` its canonical product
+- confine the existing rebuild validator to developer-only guidance
+- define automatic idempotent rerun guarantees as the normal product behavior
 
-Deliver:
+Detailed contract pages:
 
-- `JournalEntryRecord`, `PostingRecord`, and `EntryCheckRecord`
-- journal-owned blockers and entry-check rules
-- rendering orchestration over accepted upstream products that stays narrow and
-  downstream-facing
+- [Architecture Overview](docs/concepts/architecture-overview.md)
+- [Domain Ontology](docs/concepts/domain-ontology.md)
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](docs/concepts/reconciliation-tax-architecture.md)
+- [Bridge To Target Mapping](docs/concepts/bridge-to-target-mapping.md)
+- [Pipeline Stage Contracts](docs/concepts/pipeline-stage-contracts.md)
+- [Journal Contract](docs/reference/journal-contract.md)
+- [Target Persistence Reference](docs/reference/target-persistence-reference.md)
+- [Migration Sequence](docs/status/migration-sequence.md)
+
+Scope boundary:
+
+- forward docs only
+- no code or test changes
+- current-state truth remains accurate
 
 Exit criteria:
 
-- `Journal` runs entry checks over accepted truth without becoming a
-  truth-repair layer
+- no forward-looking doc still routes Phase 6 through the retired
+  application-side `journal` root, the retired domain-side `journal` root, or
+  the retired journal backend-seam name
+- no forward-looking product contract still uses `Replay Gates` or
+  product-facing rebuild framing
+- no user-facing guide presents the rebuild validator as a normal workflow
+- `portfolio`, `performance`, `reporting`, and `investigation` are the
+  reserved future semantic families
+- `visualization` is no longer reserved as a first-class capability
+
+## Phase 6. Land Canonical Accounting Journal
+
+Goal:
+
+- make canonical journal expansion, repo-owned entry checks, and backend
+  handoff a first-class downstream stage
+
+Detailed contract pages:
+
+- [Journal Contract](docs/reference/journal-contract.md)
+- [Pipeline Stage Contracts](docs/concepts/pipeline-stage-contracts.md)
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](docs/concepts/reconciliation-tax-architecture.md)
+- [Migration Sequence](docs/status/migration-sequence.md)
+
+Scope boundary:
+
+- `Journal` consumes authoritative `EconomicFacts` and `Checkpoint` kernels
+  from the bounded downstream slice
+- `Journal` is the canonical accounting product and write model for
+  `JournalEntryRecord`, `PostingRecord`, `EntryCheckRecord`, journal-owned
+  gaps, and backend-neutral journal detail
+- `accounting` is the owning capability for canonical journal construction,
+  accounting entry checks, backend orchestration, and bounded accounting
+  inspection
+- `ledger_cli` is the first accounting backend id, while `ledger-cli`
+  remains a downstream corroboration and inspection tool only
+- the accounting backend seam is intentionally replaceable, and backend
+  invocation plus backend-specific artifacts remain derived outputs
+  downstream of `Journal`
+- `TaxInputs` and `TaxOutputs` keep identity and kernel meaning anchored to
+  authoritative `Checkpoint` plus `EconomicFacts`; this slice does not add
+  `journal_ref` or backend-derived identity to tax products
+
+Implementation slices:
+
+- land canonical journal expansion, repo-owned entry checks, backend
+  orchestration, and backend-neutral detail generation under
+  `application/accounting/`
+- land `domain/accounting/` for the target accounting family
+- land `ports/accounting_backends.py` for the replaceable accounting backend
+  seam and `infrastructure/ledger_cli/` for the first subprocess-backed
+  backend implementation
+- persist the journal kernel plus backend-neutral detail at the journal root
+  and keep `ledger_cli` artifacts under
+  `working/products/journals/<journal_id>/backends/ledger_cli/`
+- keep current compatibility renderers and fact-output adapters on their
+  existing compatibility path until their own cutover slices land
+
+Workflow scope:
+
+- build canonical accounting journal
+- inspect journal
+- explain blocked entries
+- validate through the selected accounting backend
+- use bounded `ledger-cli` inspection commands for accounting corroboration:
+  `print`, `accounts`, `balance`, and `register`
+
+Explicitly exclude:
+
+- broad reporting
+- dashboards
+- portfolio analytics
+- performance analytics
+- visualization datasets
+
+Exit criteria:
+
+- repeated runs on unchanged authoritative inputs preserve `journal_id`,
+  `entry_id`, `posting_id`, and `entry_check_id`
+- deterministic reruns on unchanged authoritative inputs preserve the owned
+  generated outputs
+- blocked entries emit explicit journal-owned checks or gaps and zero postings
+  instead of silent omission
+- reruns do not corrupt generated state or append stale rows
+- `ledger_cli` corroboration reruns from authoritative `Journal` kernels
+  alone without changing journal authority or repairing data
+- later backends can replace `ledger_cli` without redefining journal ids,
+  journal-owned check outcomes, or tax identity
+- no ledger-derived identity leaks into tax
+- no user-facing rebuild workflow or manual rerun hygiene is required to keep
+  the product healthy
+- detailed backend artifact, validation-lane, and cutover rules stay on the
+  owner docs rather than in this planning surface
 
 ## Phase 7. Land `TaxInputs` And `TaxOutputs`
 
@@ -173,25 +292,45 @@ Goal:
 - build policy-ready tax inputs and policy-owned outputs from accepted
   upstream products
 
-Deliver:
+Detailed contract pages:
 
-- `TaxInputs` contracts
-- selected tax-policy execution over those inputs
-- year partitioning and tax carry-forward records
-- explicit tax unsupported-input records where policy execution cannot proceed
-- filing-critical policy outputs derived from accepted upstream products rather
-  than CoinTracking tax reports
-- `TaxOutputs` ownership of `policy_summary`, `supporting_schedule`,
-  `filing_form`, policy explanations, limitations, and rendered policy content
-  for the tax-first path
+- [Pipeline Stage Contracts](docs/concepts/pipeline-stage-contracts.md)
+- [Journal Contract](docs/reference/journal-contract.md)
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](docs/concepts/reconciliation-tax-architecture.md)
+- [Migration Sequence](docs/status/migration-sequence.md)
+
+Scope boundary:
+
+- `TaxInputs` remain anchored to authoritative `Checkpoint` plus
+  `EconomicFacts`, not to `Journal`, `journal_ref`, or any backend-generated
+  artifact
+- selected tax policies emit `TaxOutputs`, tax carry-forward rows, and
+  explicit unsupported-input rows from those authoritative upstream products
+- journal outputs and journal-backend findings may inform downstream review
+  posture only as declared non-authoritative detail
+- `TaxOutputs` keep grouped readiness local to the active tax-first path and do
+  not become general reporting storage
+
+Implementation slices:
+
+- define basis-pool and basis-transition construction over accepted upstream
+  truth
+- partition tax work by `tax_year` and carry-forward refs rather than
+  full-history rescans
+- emit filing-critical policy outputs from selected policies without treating
+  CoinTracking tax reports, journal backends, or renderer outputs as peer
+  authorities
 
 Exit criteria:
 
+- `TaxInputs` and `TaxOutputs` rerun deterministically from authoritative
+  `Checkpoint`, `EconomicFacts`, and selected tax-policy inputs without
+  bridge facts, `journal_ref`, or backend-derived identity
 - `2023` to `2025` outputs can be produced from reconciled economics and
   accepted checkpoint truth without treating CoinTracking tax reports as the
   ledger
 - `TaxOutputs` remains a narrow tax-output exception rather than the permanent
-  home of general reporting, dashboards, portfolio views, visualization
+  home of general reporting, dashboards, portfolio views, performance
   datasets, or investigation workflows
 
 ## Phase 8. Repo-Only Support Reset
@@ -256,8 +395,8 @@ Deliver:
 - broader capability-owned derived read models and projections if no earlier
   trigger already activated them
 - reserved package families stay explicit when they are finally needed:
-  `application/reporting/`, `application/portfolio/`,
-  `application/visualization/`, and `application/investigation/`
+  `application/portfolio/`, `application/performance/`,
+  `application/reporting/`, and `application/investigation/`
 
 Exit criteria:
 
@@ -289,7 +428,7 @@ Rules:
   actually uses
 - hot-path calculations should operate on compact kernel records instead of
   repeatedly joining provenance, review, or renderer detail
-- derived snapshots and reusable state should be introduced where replay cost
+- derived snapshots and reusable state should be introduced where rerun cost
   becomes material
 - tax work should support tax-year partitioning and tax carry-forward record reuse instead
   of recomputing full acquisition history for every output row
@@ -330,7 +469,7 @@ Rules:
 
 - maintain parser and adapter contract tests
 - expand compatibility-view parity tests
-- add replay coverage for target kernels and compatibility views
+- add deterministic rerun coverage for target kernels and compatibility views
 - add reconciliation parity and checkpoint continuity tests
 - add journal entry-check coverage
 - add tax policy coverage with explicit tax unsupported-input records

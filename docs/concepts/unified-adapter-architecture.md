@@ -75,7 +75,7 @@ Shared runtime owns cross-adapter workflow:
 - shared gap, review, and attachment conventions
 - `EconomicFacts` construction
 - bridge compatibility view generation
-- replay and parity verification
+- deterministic rerun and parity verification
 - output packaging
 
 If two adapters need the same rule and the rule is not adapter-specific, it

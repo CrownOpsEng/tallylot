@@ -26,7 +26,8 @@ Use this page for:
 - migration landing rules
 - reader and writer cutover expectations
 - bridge retirement rules
-- parity and replay gates that must hold before one surface is retired
+- parity and deterministic rerun gates that must hold before one surface is
+  retired
 
 Do not use this page for:
 
@@ -160,6 +161,15 @@ This contract is implemented for the bounded planner-enabled Coinbase slice.
 Current facts, balance snapshots, and balance references remain on the
 compatibility path for readers until the later reader-cutover work lands.
 
+For that implemented downstream slice,
+[Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
+holds the detailed downstream contract,
+[Product Outputs](../workspace/working/products/README.md) owns current
+workspace placement of authoritative kernels plus retained compatibility
+views, and [Current State](current-state.md) owns the live runtime truth
+statement. Keep future implemented-slice updates on those documents rather
+than re-expanding completed downstream planning elsewhere.
+
 ### 4. Reader Cutovers
 
 After those slices land, migrate readers one consumer surface at a time:
@@ -174,22 +184,100 @@ After those slices land, migrate readers one consumer surface at a time:
   outputs, or compatibility views until a later capability-specific increment
   requires a dedicated derived read-model slice
 
-### 5. Later Downstream Products
+### 4A. Accounting Boundary And Automatic Rerun Correction
 
-Land `Journal`, `TaxInputs`, and `TaxOutputs` only after the upstream target
-products they depend on are authoritative for the relevant scope.
+Before the journal slice lands, keep the forward contract surfaces aligned on
+one accounting boundary and one normal rerun posture.
 
 Rules:
 
-- do not let `Journal` repair economic or checkpoint truth
-- do not let tax decide source meaning, reconciliation completeness, or
-  checkpoint acceptance
+- current-state rebuild validation tooling remains developer-only
+- normal product behavior is automatic, idempotent rerun over owned generated
+  outputs
+- the fast path stays on ordinary reruns from authoritative persisted truth
+  rather than on rebuild-style operator workflows
+- hot-path calculations stay on authoritative kernels and required hot-path
+  fields only; unrelated detail stays in sidecars or other declared non-kernel
+  outputs
+- when authoritative inputs change, the affected stages or partitions rerun
+  automatically while unchanged partitions skip recalculation
+- safe full-rebuild overrides may bypass cache or fingerprint skips only when
+  they can rebuild from the declared upstream truth without losing manual
+  adjustments outside the owned generated surface
+- forward package and capability ownership is corrected to `accounting`
+  without changing the canonical `Journal` product name
+- the journal backend seam becomes the accounting backend seam
+- later cutover gates use deterministic rerun and parity proof rather than
+  product-facing rebuild workflows or special rerun hygiene
 
-Later planning-document steps remain intentionally high-level here. They are out of
-scope for the current contract delivery and do not block near-term
-implementation once the contract lock is satisfied.
+### 5. Journal Contract
 
-### 6. Triggered Derived Read-Model Activation
+Land the bounded [Journal Contract](../reference/journal-contract.md) only
+after authoritative `EconomicFacts` and `Checkpoint` exist for the relevant
+scope.
+
+Required posture:
+
+- `Journal` becomes authoritative as the canonical accounting product for
+  in-scope journal entry expansion, repo-owned entry-check results, and
+  journal-owned gaps
+- `application/accounting/` is the forward owning capability for canonical
+  journal construction, accounting entry checks, backend orchestration, and
+  bounded accounting inspection views
+- `ports/accounting_backends.py` is the replaceable backend seam, and
+  `ledger_cli` is the first backend reader that consumes `Journal` directly
+- new journal renderers, accounting inspection outputs, and `ledger_cli`
+  backend surfaces read `Journal` directly rather than rebuilding postings
+  from compatibility facts or checkpoint helpers
+- `cointracking_csv` and other current compatibility outputs remain on their
+  existing compatibility path until a later cutover names them explicitly
+- `TaxInputs` keep product identity and kernel meaning anchored to
+  authoritative `Checkpoint` plus `EconomicFacts`; `Journal` does not become a
+  hidden upstream product ref for tax
+
+Cutover gates:
+
+- deterministic `journal_id`, `entry_id`, `posting_id`, and `entry_check_id`
+  are frozen for unchanged upstream products
+- blocked journal mappings remain explicit through `EntryCheckRecord` rows,
+  journal-owned gaps, and declared backend-local findings when the backend
+  detects an additional downstream issue
+- canonical journal reruns and `ledger_cli` corroboration reruns both run from
+  authoritative `Journal` kernels alone
+- no `journal_ref`, backend file hash, or backend-local id leaks into tax
+  identity
+
+### 6. TaxInputs And TaxOutputs
+
+Land `TaxInputs` and `TaxOutputs` only after the upstream target products they
+depend on are authoritative for the relevant scope and the journal increment
+has stabilized entry-expansion plus entry-check ownership.
+
+Rules:
+
+- `TaxInputs` derive from authoritative `Checkpoint` plus `EconomicFacts`, not
+  bridge facts, compatibility views, `Journal`, or a hidden `journal_ref`
+- journal detail and journal-backend findings may inform downstream review
+  posture only as declared non-authoritative detail
+- `TaxOutputs` own selected-policy outputs, carry-forward rows, explicit
+  unsupported-input rows, and the tax-output-local grouped readiness file for
+  the active tax-first path only
+- do not let tax decide source meaning, reconciliation completeness,
+  checkpoint acceptance, or journal outcomes
+- broader grouped consumers stay on tax-output-local outputs, narrow rendering
+  outputs, or compatibility views until a later capability-specific increment
+  requires a dedicated derived read-model slice
+
+Cutover gates:
+
+- repeated runs preserve `tax_inputs_id` and `tax_outputs_id` on unchanged
+  authoritative upstream products plus selected tax-policy inputs
+- unsupported tax posture stays explicit through `TaxUnsupportedInputRecord`
+  rows and tax-owned gaps
+- filing-critical tax outputs read `TaxOutputs` directly without bridge facts,
+  CoinTracking tax reports, or journal-backend identity as peer authorities
+
+### 7. Triggered Derived Read-Model Activation
 
 The planning document may still carry later activation detail, but this page keeps the
 durable rule: broader derived read models and projections stay deferred until
@@ -217,7 +305,8 @@ Retire or demote a bridge surface only when all of the following are true:
 - the slice names one authoritative writer for the affected scope
 - every active reader has a declared target reader or derived compatibility
   view
-- parity and replay gates for the affected slice pass on unchanged evidence
+- parity and deterministic rerun gates for the affected slice pass on
+  unchanged evidence
 - current-state docs are updated if the implemented live runtime surface
   changes
 
@@ -227,13 +316,13 @@ Bridge retirement is therefore:
 - per reader, not just per writer
 - controlled by cutover gates, not by naming preference
 
-## Parity And Replay Gates
+## Parity And Deterministic Rerun Gates
 
 Do not retire an older path until all relevant gates pass:
 
 - adapter or parser contract tests for the affected slice
 - compatibility-view parity tests for every retained compatibility view
-- target-kernel replay checks for the authoritative product
+- target-kernel deterministic rerun checks for the authoritative product
 - reconciliation or checkpoint parity where the slice reaches those stages
 - end-to-end smoke coverage for the affected workflow
 

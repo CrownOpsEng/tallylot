@@ -9,6 +9,7 @@ naming_scope: forward_target
 nav_order: 17
 related:
   - docs/concepts/pipeline-stage-contracts.md
+  - docs/reference/journal-contract.md
   - docs/concepts/domain-ontology.md
   - docs/concepts/gaps-and-reviews.md
   - ROADMAP.md
@@ -30,6 +31,8 @@ Use the detailed contract pages first:
 - [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md) for
   stable-id format, target product ids, upstream product refs, target product
   kernels, and shared status vocabularies
+- [Journal Contract](journal-contract.md) for bounded `Journal` chart,
+  mapping, backend, and validation restrictions
 - [Domain Ontology](../concepts/domain-ontology.md) for `AssertionValue`,
   `PositionRef`, `ContractRef`, `BasisPoolRef`, and other domain refs plus
   identity seams
@@ -92,6 +95,19 @@ Frozen `origin_kind` vocabulary:
 
 `OriginRef.origin_kind = market_input` stays on the origin axis. It names an
 immediate upstream source class, not a valuation-purpose member.
+
+## Chart Id
+
+`chart_id` identifies one repo-owned journal chart namespace.
+
+Rules:
+
+- `chart_id` is the leading slot of `JournalAccountRef`
+- one emitted `Journal` kernel uses exactly one `chart_id`
+- `chart_id` names the repo-owned chart family chosen for that journal slice
+- `chart_id` must be kebab-case
+- `chart_id` is not a user namespace, renderer namespace, or journal backend
+  namespace
 
 ## Journal Refs
 
