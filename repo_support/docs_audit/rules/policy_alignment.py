@@ -324,6 +324,7 @@ POLICY_ALIGNMENT_RULES = (
                 "platform-native enforcement",
                 "repo-native policy as code",
                 "agent default behavior",
+                "ROADMAP.md` is not the only\n  allowed planning surface",
                 "draft by default",
                 "ready for review",
                 "evidence-backed findings",
@@ -361,7 +362,8 @@ POLICY_ALIGNMENT_RULES = (
                 "bridge cutover matrix inventory, owner, compatibility, reader, and gate",
                 "`docs/README.md` generated reference-group headings/order are",
                 "required `naming_scope` frontmatter/default behavior is",
-                "planning and forward-looking docs may use roadmap-owned ephemeral tags",
+                "forward-looking docs may use ephemeral planning language",
+                "`ROADMAP.md` is not the only allowed\n  planning surface",
                 "delivery metadata surfaces must stay",
                 "treat the blocking `target-naming` review check as the repo-native guard",
             )
