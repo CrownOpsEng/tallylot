@@ -321,6 +321,156 @@ def test_source_normalize_cli_returns_nonzero_for_blocked_coinbase_plan(
     assert not (output_dir / "facts.csv").exists()
 
 
+def test_source_normalize_cli_update_modes_drive_target_product_execution(
+    tmp_path: Path,
+) -> None:
+    raw_capture_root = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_capture_root / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    pdf = canvas.Canvas(str(raw_capture_root / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    output_dir = tmp_path / "normalized"
+
+    first_result = runner.invoke(
+        app,
+        [
+            "source",
+            "normalize",
+            "--source",
+            "coinbase",
+            "--raw-dir",
+            str(raw_capture_root),
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    second_result = runner.invoke(
+        app,
+        [
+            "source",
+            "normalize",
+            "--source",
+            "coinbase",
+            "--raw-dir",
+            str(raw_capture_root),
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    second_summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+    full_update_result = runner.invoke(
+        app,
+        [
+            "source",
+            "normalize",
+            "--source",
+            "coinbase",
+            "--raw-dir",
+            str(raw_capture_root),
+            "--output-dir",
+            str(output_dir),
+            "--update-mode",
+            "full-update",
+        ],
+    )
+    full_update_summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+    rebuild_result = runner.invoke(
+        app,
+        [
+            "source",
+            "normalize",
+            "--source",
+            "coinbase",
+            "--raw-dir",
+            str(raw_capture_root),
+            "--output-dir",
+            str(output_dir),
+            "--update-mode",
+            "rebuild",
+        ],
+    )
+    rebuild_summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+
+    first_payload = json.loads(first_result.stdout)
+    second_payload = json.loads(second_result.stdout)
+    full_update_payload = json.loads(full_update_result.stdout)
+    rebuild_payload = json.loads(rebuild_result.stdout)
+
+    assert first_result.exit_code == 0
+    assert second_result.exit_code == 0
+    assert full_update_result.exit_code == 0
+    assert rebuild_result.exit_code == 0
+    assert second_payload["update_mode_effective"] == "auto"
+    assert second_payload["reused_target_product_count"] > 0
+    assert second_payload["economic_facts_ref"] == first_payload["economic_facts_ref"]
+    assert (
+        second_summary["target_product_execution"]["economic_facts"]["kernel_action"]
+        == "reused"
+    )
+    assert (
+        full_update_payload["economic_facts_ref"] == first_payload["economic_facts_ref"]
+    )
+    assert (
+        full_update_summary["target_product_execution"]["economic_facts"][
+            "kernel_action"
+        ]
+        == "reused"
+    )
+    assert (
+        full_update_summary["target_product_execution"]["economic_facts"][
+            "compatibility_action"
+        ]
+        == "refreshed"
+    )
+    assert all(
+        state["snapshot_action"] == "refreshed"
+        for state in full_update_summary["target_product_execution"][
+            "reconciliation_states"
+        ]
+    )
+    assert all(
+        checkpoint["reference_action"] == "refreshed"
+        for checkpoint in full_update_summary["target_product_execution"]["checkpoints"]
+    )
+    assert rebuild_payload["economic_facts_ref"] == first_payload["economic_facts_ref"]
+    assert (
+        rebuild_summary["target_product_execution"]["economic_facts"]["kernel_action"]
+        == "rebuilt"
+    )
+    assert all(
+        state["kernel_action"] == "rebuilt"
+        for state in rebuild_summary["target_product_execution"][
+            "reconciliation_states"
+        ]
+    )
+    assert all(
+        checkpoint["kernel_action"] == "rebuilt"
+        for checkpoint in rebuild_summary["target_product_execution"]["checkpoints"]
+    )
+
+
 def test_source_manifest_cli(tmp_path: Path) -> None:
     source_dir = tmp_path / "capture"
     source_dir.mkdir()

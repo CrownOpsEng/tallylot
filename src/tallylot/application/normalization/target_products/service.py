@@ -81,6 +81,8 @@ def build_target_product_execution(
     translation_result: TranslationExecutionResult,
     dependencies: TargetProductDependencies,
 ) -> TargetProductExecutionResult:
+    summary_path = normalization_output_dir / "normalization_summary.json"
+    prior_plan = load_prior_target_product_execution(summary_path)
     claim_set = translation_result.claim_set
     evidence_set = translation_result.evidence_set
     if (
@@ -88,13 +90,38 @@ def build_target_product_execution(
         or evidence_set is None
         or translation_result.claim_set_ref == ""
     ):
+        if prior_plan is None:
+            return TargetProductExecutionResult(
+                update_mode_requested=update_mode.value,
+                update_mode_effective=update_mode.value,
+            )
+        pruned_reconciliation_state_refs = tuple(
+            decision.reconciliation_state_ref
+            for decision in prior_plan.reconciliation_states
+        )
+        pruned_checkpoint_refs = tuple(
+            decision.checkpoint_ref for decision in prior_plan.checkpoints
+        )
+        prune_product_roots(workspace_root, pruned_reconciliation_state_refs)
+        prune_product_roots(workspace_root, pruned_checkpoint_refs)
+        execution_plan = TargetProductExecutionPlan(
+            signature_version=TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION,
+            update_mode_requested=update_mode.value,
+            update_mode_effective=update_mode.value,
+            claim_set_fingerprint="",
+            economic_facts=None,
+            reconciliation_states=(),
+            checkpoints=(),
+            pruned_reconciliation_state_refs=pruned_reconciliation_state_refs,
+            pruned_checkpoint_refs=pruned_checkpoint_refs,
+        )
         return TargetProductExecutionResult(
+            execution_summary=summarize_target_product_execution(execution_plan),
+            execution_plan_payload=execution_plan_payload(execution_plan),
             update_mode_requested=update_mode.value,
             update_mode_effective=update_mode.value,
         )
 
-    summary_path = normalization_output_dir / "normalization_summary.json"
-    prior_plan = load_prior_target_product_execution(summary_path)
     claim_set_fingerprint = claim_set_execution_fingerprint(claim_set)
 
     (

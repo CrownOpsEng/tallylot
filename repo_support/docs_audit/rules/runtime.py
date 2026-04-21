@@ -172,6 +172,14 @@ RUNTIME_RULES = (
                     ),
                 ),
                 (
+                    "guides/operator-quickstart.md",
+                    (
+                        "--update-mode auto",
+                        "--update-mode full-update",
+                        "--update-mode rebuild",
+                    ),
+                ),
+                (
                     "guides/normalize-screen-stage.md",
                     (
                         "--update-mode auto",

@@ -336,6 +336,14 @@ def test_durable_doc_policy_rule_rejects_forbidden_planning_phrases(
     )
 
 
+def test_durable_doc_policy_surface_list_covers_phase5a_owner_docs() -> None:
+    assert {
+        "docs/concepts/unified-adapter-architecture.md",
+        "docs/reference/target-ids-and-refs.md",
+        "docs/status/adapter-delivery-plan.md",
+    }.issubset(policy_alignment._DURABLE_NON_PLANNING_SURFACE_PATHS)
+
+
 def test_runtime_rule_requires_fast_path_phrasing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -352,6 +360,9 @@ def test_runtime_rule_requires_fast_path_phrasing(
             ("`full-update`", "`rebuild`", "skip recalculation")
         ),
         "guides/source-intake.md": "\n".join(
+            ("--update-mode auto", "--update-mode full-update", "--update-mode rebuild")
+        ),
+        "guides/operator-quickstart.md": "\n".join(
             ("--update-mode auto", "--update-mode full-update", "--update-mode rebuild")
         ),
         "guides/normalize-screen-stage.md": "\n".join(
@@ -375,6 +386,53 @@ def test_runtime_rule_requires_fast_path_phrasing(
             "runtime.owner_docs_pin_automatic_fast_path_reruns",
             "docs/status/current-state.md",
             "reference/evidence-claim-contract.md is missing fast-path rerun contract text",
+            None,
+        ),
+    )
+
+
+def test_runtime_rule_checks_operator_quickstart_fast_path_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs = {
+        "status/current-state.md": "\n".join(
+            (
+                "Automatic recalculation is the default normalization posture",
+                "`source normalize --update-mode full-update`",
+                "`source normalize --update-mode rebuild`",
+            )
+        ),
+        "reference/evidence-claim-contract.md": "\n".join(
+            ("automatic and transparent", "skip unnecessary recalculation")
+        ),
+        "reference/economics-reconciliation-checkpoint-contract.md": "\n".join(
+            ("`full-update`", "`rebuild`", "skip recalculation")
+        ),
+        "guides/source-intake.md": "\n".join(
+            ("--update-mode auto", "--update-mode full-update", "--update-mode rebuild")
+        ),
+        "guides/operator-quickstart.md": "ordinary normalize path only",
+        "guides/normalize-screen-stage.md": "\n".join(
+            ("--update-mode auto", "--update-mode full-update", "--update-mode rebuild")
+        ),
+    }
+
+    def fake_docs_text(path: str) -> str:
+        return docs[path]
+
+    monkeypatch.setattr(runtime, "docs_text", fake_docs_text)
+
+    findings = next(
+        rule.run()
+        for rule in runtime.RUNTIME_RULES
+        if rule.rule_id == "runtime.owner_docs_pin_automatic_fast_path_reruns"
+    )
+
+    assert findings == (
+        DocsAuditFinding(
+            "runtime.owner_docs_pin_automatic_fast_path_reruns",
+            "docs/status/current-state.md",
+            "guides/operator-quickstart.md is missing fast-path rerun contract text",
             None,
         ),
     )

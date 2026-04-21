@@ -70,7 +70,7 @@ Required prep rule:
   declared compatibility sidecars, not in `EvidenceSet` or
   `ClaimSet` fields
 
-### `roadmap`
+### `deferred`
 
 Broader unified-manifest and multi-facet migration after the filing path is
 stable and those contract pages have proven the contract set.

@@ -500,6 +500,81 @@ def test_normalization_rerun_prunes_stale_checkpoint_roots_when_current_run_emit
     )
 
 
+def test_normalization_rerun_prunes_downstream_products_when_target_execution_disappears(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    from reportlab.pdfgen import canvas
+
+    pdf = canvas.Canvas(str(raw_dir / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    for path in raw_dir.iterdir():
+        if path.name != "capture.json":
+            path.unlink()
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+    workspace_root = tmp_path / "workspace"
+
+    assert first.reconciliation_state_refs
+    assert first.checkpoint_refs
+    assert second.economic_facts_ref == ""
+    assert second.reconciliation_state_refs == ()
+    assert second.checkpoint_refs == ()
+    assert second.pruned_target_product_count == (
+        len(first.reconciliation_state_refs) + len(first.checkpoint_refs)
+    )
+    assert not any(
+        (workspace_root / ref).exists() for ref in first.reconciliation_state_refs
+    )
+    assert not any((workspace_root / ref).exists() for ref in first.checkpoint_refs)
+    assert summary["target_product_execution"]["economic_facts"] is None
+    assert summary["target_product_execution"]["reconciliation_states"] == []
+    assert summary["target_product_execution"]["checkpoints"] == []
+    assert summary["target_product_execution"][
+        "pruned_reconciliation_state_refs"
+    ] == list(first.reconciliation_state_refs)
+    assert summary["target_product_execution"]["pruned_checkpoint_refs"] == list(
+        first.checkpoint_refs
+    )
+
+
 @pytest.mark.parametrize(
     ("source", "raw_dir", "expected"),
     (
