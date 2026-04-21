@@ -558,7 +558,7 @@ def test_normalization_rerun_prunes_stale_checkpoint_roots_when_current_run_emit
     )
 
 
-def test_normalization_rerun_prunes_downstream_products_when_target_execution_disappears(
+def test_normalization_rerun_prunes_target_products_when_target_execution_disappears(
     tmp_path: Path,
 ) -> None:
     raw_dir = materialize_capture_root(tmp_path, source="coinbase")

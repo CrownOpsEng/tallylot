@@ -13,7 +13,7 @@ from tests.support.adapter_packs import fixture_raw_dir
 from tests.support.services import build_normalization_service
 
 
-def test_coinbase_retail_only_normalization_writes_downstream_products(
+def test_coinbase_retail_only_normalization_writes_target_products(
     tmp_path: Path,
 ) -> None:
     raw_dir = materialize_capture_root(
