@@ -616,8 +616,9 @@ def test_normalization_rerun_prunes_target_products_when_target_execution_disapp
     assert second.reconciliation_state_refs == ()
     assert second.checkpoint_refs == ()
     assert second.pruned_target_product_count == (
-        len(first.reconciliation_state_refs) + len(first.checkpoint_refs)
+        1 + len(first.reconciliation_state_refs) + len(first.checkpoint_refs)
     )
+    assert not (workspace_root / first.economic_facts_ref).exists()
     assert not any(
         (workspace_root / ref).exists() for ref in first.reconciliation_state_refs
     )

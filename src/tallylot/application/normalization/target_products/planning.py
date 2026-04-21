@@ -155,14 +155,14 @@ def _plan_economic_facts(
     if current is None:
         return None
     prior = prior_plan.economic_facts if prior_plan is not None else None
-    kernel_action = _decide_kernel_action(
+    kernel_action = decide_kernel_action(
         update_mode=update_mode,
         prior_fingerprint=None if prior is None else prior.fingerprint,
         current_fingerprint=current.fingerprint,
         kernel_exists=current.kernel_path.is_file(),
         upstream_rebuilt=False,
     )
-    compatibility_action = _decide_detail_action(
+    compatibility_action = decide_detail_action(
         update_mode=update_mode,
         kernel_action=kernel_action,
         prior_signature=None if prior is None else prior.compatibility_signature,
@@ -193,14 +193,14 @@ def _plan_reconciliation_states(
     decisions: list[ReconciliationStateExecutionDecision] = []
     for candidate in current:
         prior = prior_by_ref.get(candidate.reconciliation_state_ref)
-        kernel_action = _decide_kernel_action(
+        kernel_action = decide_kernel_action(
             update_mode=update_mode,
             prior_fingerprint=None if prior is None else prior.fingerprint,
             current_fingerprint=candidate.fingerprint,
             kernel_exists=candidate.kernel_path.is_file(),
             upstream_rebuilt=upstream_rebuilt,
         )
-        snapshot_action = _decide_detail_action(
+        snapshot_action = decide_detail_action(
             update_mode=update_mode,
             kernel_action=kernel_action,
             prior_signature=None if prior is None else prior.snapshot_signature,
@@ -234,14 +234,14 @@ def _plan_checkpoints(
     decisions: list[CheckpointExecutionDecision] = []
     for candidate in current:
         prior = prior_by_ref.get(candidate.checkpoint_ref)
-        kernel_action = _decide_kernel_action(
+        kernel_action = decide_kernel_action(
             update_mode=update_mode,
             prior_fingerprint=None if prior is None else prior.fingerprint,
             current_fingerprint=candidate.fingerprint,
             kernel_exists=candidate.kernel_path.is_file(),
             upstream_rebuilt=upstream_rebuilt,
         )
-        reference_action = _decide_detail_action(
+        reference_action = decide_detail_action(
             update_mode=update_mode,
             kernel_action=kernel_action,
             prior_signature=None if prior is None else prior.reference_signature,
@@ -261,7 +261,7 @@ def _plan_checkpoints(
     return tuple(decisions)
 
 
-def _decide_kernel_action(
+def decide_kernel_action(
     *,
     update_mode: NormalizeUpdateMode,
     prior_fingerprint: str | None,
@@ -280,7 +280,7 @@ def _decide_kernel_action(
     return TargetProductStageAction.REUSED
 
 
-def _decide_detail_action(
+def decide_detail_action(
     *,
     update_mode: NormalizeUpdateMode,
     kernel_action: TargetProductStageAction,

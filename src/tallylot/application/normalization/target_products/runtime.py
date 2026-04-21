@@ -57,6 +57,7 @@ from .models import (
     TargetProductExecutionPlan,
     TargetProductStageAction,
 )
+from .planning import decide_detail_action, decide_kernel_action
 from .payloads import read_fact_annotations
 from .signatures import (
     checkpoint_reference_signature,
@@ -131,35 +132,46 @@ def resolve_economic_facts(
 ]:
     prior_plan = request.prior_plan
     prior_economic_facts = None if prior_plan is None else prior_plan.economic_facts
-    can_reuse_kernel = (
+    can_use_prior_kernel_as_current = (
         request.update_mode is not NormalizeUpdateMode.REBUILD
         and prior_plan is not None
         and prior_economic_facts is not None
         and prior_plan.claim_set_fingerprint == request.claim_set_fingerprint
         and (request.workspace_root / prior_economic_facts.economic_facts_ref).is_file()
     )
-    if can_reuse_kernel:
+    if can_use_prior_kernel_as_current:
         assert prior_economic_facts is not None
         economic_facts = request.dependencies.economic_facts.read_economic_facts(
             request.workspace_root / prior_economic_facts.economic_facts_ref
         )
-        kernel_action = TargetProductStageAction.REUSED
-        fingerprint = prior_economic_facts.fingerprint
+        current_fingerprint = prior_economic_facts.fingerprint
         economic_facts_ref_value = prior_economic_facts.economic_facts_ref
+        built_current_kernel = False
     else:
         economic_facts = build_economic_facts(claim_set=request.claim_set)
+        current_fingerprint = economic_facts_fingerprint(economic_facts)
+        economic_facts_ref_value = economic_facts_ref(
+            request.workspace_root,
+            economic_facts.economic_facts_id,
+        )
+        built_current_kernel = True
+    kernel_action = decide_kernel_action(
+        update_mode=request.update_mode,
+        prior_fingerprint=(
+            None if prior_economic_facts is None else prior_economic_facts.fingerprint
+        ),
+        current_fingerprint=current_fingerprint,
+        kernel_exists=(request.workspace_root / economic_facts_ref_value).is_file(),
+        upstream_rebuilt=False,
+    )
+    if kernel_action is TargetProductStageAction.REBUILT:
+        assert built_current_kernel is True
         request.dependencies.economic_facts.write_economic_facts(
             economic_facts_product_file(
                 request.workspace_root,
                 economic_facts.economic_facts_id,
             ),
             economic_facts,
-        )
-        kernel_action = TargetProductStageAction.REBUILT
-        fingerprint = economic_facts_fingerprint(economic_facts)
-        economic_facts_ref_value = economic_facts_ref(
-            request.workspace_root,
-            economic_facts.economic_facts_id,
         )
 
     compatibility_fact_path = economic_facts_compatibility_facts_file(
@@ -176,19 +188,19 @@ def resolve_economic_facts(
         evidence_set=request.evidence_set,
         draft_projection_field_records=request.translation_result.draft_projection_field_records,
     )
-    must_refresh_detail = (
-        request.update_mode
-        in {NormalizeUpdateMode.FULL_UPDATE, NormalizeUpdateMode.REBUILD}
-        or kernel_action is TargetProductStageAction.REBUILT
-        or not compatibility_fact_path.is_file()
-        or not compatibility_annotation_path.is_file()
-        or (
-            prior_economic_facts is not None
-            and prior_economic_facts.compatibility_signature
-            != current_compatibility_signature
-        )
+    compatibility_action = decide_detail_action(
+        update_mode=request.update_mode,
+        kernel_action=kernel_action,
+        prior_signature=(
+            None
+            if prior_economic_facts is None
+            or prior_economic_facts.economic_facts_ref != economic_facts_ref_value
+            else prior_economic_facts.compatibility_signature
+        ),
+        current_signature=current_compatibility_signature,
+        detail_paths=(compatibility_fact_path, compatibility_annotation_path),
     )
-    if must_refresh_detail:
+    if compatibility_action is TargetProductStageAction.REFRESHED:
         compatibility = project_compatibility_artifacts_from_economic_facts(
             economic_facts=economic_facts,
             claim_set=request.claim_set,
@@ -203,21 +215,19 @@ def resolve_economic_facts(
             compatibility_annotation_path,
             [record.to_json() for record in compatibility.fact_annotations],
         )
-        compatibility_action = TargetProductStageAction.REFRESHED
         compatibility_signature = current_compatibility_signature
     else:
         compatibility = EconomicFactsCompatibilityArtifacts(
             facts=request.dependencies.facts.read_facts(compatibility_fact_path),
             fact_annotations=read_fact_annotations(compatibility_annotation_path),
         )
-        compatibility_action = TargetProductStageAction.REUSED
         compatibility_signature = current_compatibility_signature
     return (
         economic_facts,
         EconomicFactsExecutionDecision(
             economic_facts_id=economic_facts.economic_facts_id,
             economic_facts_ref=economic_facts_ref_value,
-            fingerprint=fingerprint,
+            fingerprint=current_fingerprint,
             kernel_action=kernel_action,
             compatibility_action=compatibility_action,
             compatibility_signature=compatibility_signature,
@@ -235,7 +245,7 @@ def resolve_reconciliation_states(
 ]:
     prior_plan = request.prior_plan
     prior_states = () if prior_plan is None else prior_plan.reconciliation_states
-    can_reuse_kernels = (
+    can_use_prior_kernels_as_current = (
         request.update_mode is not NormalizeUpdateMode.REBUILD
         and prior_plan is not None
         and prior_plan.claim_set_fingerprint == request.claim_set_fingerprint
@@ -246,29 +256,19 @@ def resolve_reconciliation_states(
             for decision in prior_states
         )
     )
-    if can_reuse_kernels:
+    if can_use_prior_kernels_as_current:
         states = tuple(
             request.dependencies.reconciliation_states.read_reconciliation_state(
                 request.workspace_root / decision.reconciliation_state_ref
             )
             for decision in prior_states
         )
-        kernel_action = TargetProductStageAction.REUSED
     else:
         states = build_reconciliation_states(
             economic_facts=request.economic_facts,
             claim_set=request.claim_set,
             evidence_set=request.evidence_set,
         )
-        for state in states:
-            request.dependencies.reconciliation_states.write_reconciliation_state(
-                reconciliation_state_product_file(
-                    request.workspace_root,
-                    state.reconciliation_state_id,
-                ),
-                state,
-            )
-        kernel_action = TargetProductStageAction.REBUILT
 
     prior_by_ref = {
         decision.reconciliation_state_ref: decision for decision in prior_states
@@ -280,31 +280,39 @@ def resolve_reconciliation_states(
             request.workspace_root,
             state.reconciliation_state_id,
         )
+        current_fingerprint = reconciliation_state_fingerprint(state)
+        kernel_action = decide_kernel_action(
+            update_mode=request.update_mode,
+            prior_fingerprint=(
+                None
+                if (prior_state := prior_by_ref.get(state_ref_value)) is None
+                else prior_state.fingerprint
+            ),
+            current_fingerprint=current_fingerprint,
+            kernel_exists=(request.workspace_root / state_ref_value).is_file(),
+            upstream_rebuilt=False,
+        )
+        if kernel_action is TargetProductStageAction.REBUILT:
+            request.dependencies.reconciliation_states.write_reconciliation_state(
+                reconciliation_state_product_file(
+                    request.workspace_root,
+                    state.reconciliation_state_id,
+                ),
+                state,
+            )
         snapshot_path = reconciliation_state_compatibility_snapshots_file(
             request.workspace_root,
             state.reconciliation_state_id,
         )
-        prior_snapshot_signature = prior_by_ref.get(state_ref_value)
-        current_snapshot_signature: str | None = None
-        if not (
-            request.update_mode
-            in {NormalizeUpdateMode.FULL_UPDATE, NormalizeUpdateMode.REBUILD}
-            or kernel_action is TargetProductStageAction.REBUILT
-            or not snapshot_path.is_file()
-        ):
-            current_snapshot_signature = reconciliation_state_snapshot_signature(state)
-        snapshot_action = (
-            TargetProductStageAction.REFRESHED
-            if request.update_mode
-            in {NormalizeUpdateMode.FULL_UPDATE, NormalizeUpdateMode.REBUILD}
-            or kernel_action is TargetProductStageAction.REBUILT
-            or not snapshot_path.is_file()
-            or (
-                prior_snapshot_signature is None
-                or prior_snapshot_signature.snapshot_signature
-                != current_snapshot_signature
-            )
-            else TargetProductStageAction.REUSED
+        current_snapshot_signature = reconciliation_state_snapshot_signature(state)
+        snapshot_action = decide_detail_action(
+            update_mode=request.update_mode,
+            kernel_action=kernel_action,
+            prior_signature=(
+                None if prior_state is None else prior_state.snapshot_signature
+            ),
+            current_signature=current_snapshot_signature,
+            detail_paths=(snapshot_path,),
         )
         if snapshot_action is TargetProductStageAction.REFRESHED:
             projected_snapshots = project_balance_snapshots_from_reconciliation_state(
@@ -314,27 +322,18 @@ def resolve_reconciliation_states(
                 snapshot_path,
                 projected_snapshots,
             )
-            snapshot_signature = (
-                current_snapshot_signature
-                if current_snapshot_signature is not None
-                else reconciliation_state_snapshot_signature(state)
-            )
+            snapshot_signature = current_snapshot_signature
         else:
             projected_snapshots = request.dependencies.evidence.read_balance_snapshots(
                 snapshot_path
             )
-            assert current_snapshot_signature is not None
             snapshot_signature = current_snapshot_signature
         snapshot_rows.extend(projected_snapshots)
         decisions.append(
             ReconciliationStateExecutionDecision(
                 reconciliation_state_id=state.reconciliation_state_id,
                 reconciliation_state_ref=state_ref_value,
-                fingerprint=(
-                    prior_by_ref[state_ref_value].fingerprint
-                    if kernel_action is TargetProductStageAction.REUSED
-                    else reconciliation_state_fingerprint(state)
-                ),
+                fingerprint=current_fingerprint,
                 kernel_action=kernel_action,
                 snapshot_action=snapshot_action,
                 snapshot_signature=snapshot_signature,
@@ -352,7 +351,7 @@ def resolve_checkpoints(
 ]:
     prior_plan = request.prior_plan
     prior_checkpoints = () if prior_plan is None else prior_plan.checkpoints
-    can_reuse_kernels = (
+    can_use_prior_kernels_as_current = (
         request.update_mode is not NormalizeUpdateMode.REBUILD
         and prior_plan is not None
         and prior_plan.claim_set_fingerprint == request.claim_set_fingerprint
@@ -362,27 +361,17 @@ def resolve_checkpoints(
             for decision in prior_checkpoints
         )
     )
-    if can_reuse_kernels:
+    if can_use_prior_kernels_as_current:
         checkpoints = tuple(
             request.dependencies.checkpoints.read_checkpoint(
                 request.workspace_root / decision.checkpoint_ref
             )
             for decision in prior_checkpoints
         )
-        kernel_action = TargetProductStageAction.REUSED
     else:
         checkpoints = build_checkpoints(
             reconciliation_states=request.reconciliation_states
         )
-        for checkpoint in checkpoints:
-            request.dependencies.checkpoints.write_checkpoint(
-                checkpoint_product_file(
-                    request.workspace_root,
-                    checkpoint.checkpoint_id,
-                ),
-                checkpoint,
-            )
-        kernel_action = TargetProductStageAction.REBUILT
 
     prior_by_ref = {decision.checkpoint_ref: decision for decision in prior_checkpoints}
     observation_details = observation_details_from_evidence_set(request.evidence_set)
@@ -393,35 +382,45 @@ def resolve_checkpoints(
             request.workspace_root,
             checkpoint.checkpoint_id,
         )
+        current_fingerprint = checkpoint_fingerprint(checkpoint)
+        kernel_action = decide_kernel_action(
+            update_mode=request.update_mode,
+            prior_fingerprint=(
+                None
+                if (prior_checkpoint := prior_by_ref.get(checkpoint_ref_value)) is None
+                else prior_checkpoint.fingerprint
+            ),
+            current_fingerprint=current_fingerprint,
+            kernel_exists=(request.workspace_root / checkpoint_ref_value).is_file(),
+            upstream_rebuilt=False,
+        )
+        if kernel_action is TargetProductStageAction.REBUILT:
+            request.dependencies.checkpoints.write_checkpoint(
+                checkpoint_product_file(
+                    request.workspace_root,
+                    checkpoint.checkpoint_id,
+                ),
+                checkpoint,
+            )
         reference_path = checkpoint_compatibility_references_file(
             request.workspace_root,
             checkpoint.checkpoint_id,
         )
-        prior_reference_signature = prior_by_ref.get(checkpoint_ref_value)
-        current_reference_signature: str | None = None
-        if not (
-            request.update_mode
-            in {NormalizeUpdateMode.FULL_UPDATE, NormalizeUpdateMode.REBUILD}
-            or kernel_action is TargetProductStageAction.REBUILT
-            or not reference_path.is_file()
-        ):
-            current_reference_signature = checkpoint_reference_signature(
-                checkpoint=checkpoint,
-                reconciliation_states=request.reconciliation_states,
-                evidence_set=request.evidence_set,
-            )
-        reference_action = (
-            TargetProductStageAction.REFRESHED
-            if request.update_mode
-            in {NormalizeUpdateMode.FULL_UPDATE, NormalizeUpdateMode.REBUILD}
-            or kernel_action is TargetProductStageAction.REBUILT
-            or not reference_path.is_file()
-            or (
-                prior_reference_signature is None
-                or prior_reference_signature.reference_signature
-                != current_reference_signature
-            )
-            else TargetProductStageAction.REUSED
+        current_reference_signature = checkpoint_reference_signature(
+            checkpoint=checkpoint,
+            reconciliation_states=request.reconciliation_states,
+            evidence_set=request.evidence_set,
+        )
+        reference_action = decide_detail_action(
+            update_mode=request.update_mode,
+            kernel_action=kernel_action,
+            prior_signature=(
+                None
+                if prior_checkpoint is None
+                else prior_checkpoint.reference_signature
+            ),
+            current_signature=current_reference_signature,
+            detail_paths=(reference_path,),
         )
         if reference_action is TargetProductStageAction.REFRESHED:
             projected_references = project_balance_references_from_checkpoint(
@@ -433,31 +432,18 @@ def resolve_checkpoints(
                 reference_path,
                 projected_references,
             )
-            reference_signature = (
-                current_reference_signature
-                if current_reference_signature is not None
-                else checkpoint_reference_signature(
-                    checkpoint=checkpoint,
-                    reconciliation_states=request.reconciliation_states,
-                    evidence_set=request.evidence_set,
-                )
-            )
+            reference_signature = current_reference_signature
         else:
             projected_references = (
                 request.dependencies.evidence.read_balance_references(reference_path)
             )
-            assert current_reference_signature is not None
             reference_signature = current_reference_signature
         reference_rows.extend(projected_references)
         decisions.append(
             CheckpointExecutionDecision(
                 checkpoint_id=checkpoint.checkpoint_id,
                 checkpoint_ref=checkpoint_ref_value,
-                fingerprint=(
-                    prior_by_ref[checkpoint_ref_value].fingerprint
-                    if kernel_action is TargetProductStageAction.REUSED
-                    else checkpoint_fingerprint(checkpoint)
-                ),
+                fingerprint=current_fingerprint,
                 kernel_action=kernel_action,
                 reference_action=reference_action,
                 reference_signature=reference_signature,

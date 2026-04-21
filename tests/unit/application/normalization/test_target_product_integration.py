@@ -262,6 +262,8 @@ def test_coinbase_normalization_changed_capture_rebuilds_only_affected_target_pr
         summary["target_product_execution"]["economic_facts"]["kernel_action"]
         == "rebuilt"
     )
+    if second.economic_facts_ref != first.economic_facts_ref:
+        assert not (workspace_root / first.economic_facts_ref).exists()
     assert not any(
         (workspace_root / ref).exists()
         for ref in summary["target_product_execution"][

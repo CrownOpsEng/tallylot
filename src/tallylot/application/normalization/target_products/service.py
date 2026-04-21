@@ -83,6 +83,7 @@ def build_target_product_execution(
 ) -> TargetProductExecutionResult:
     summary_path = normalization_output_dir / "normalization_summary.json"
     prior_plan = load_prior_target_product_execution(summary_path)
+    pruned_economic_facts_refs = _pruned_economic_facts_refs(prior_plan, "")
     claim_set = translation_result.claim_set
     evidence_set = translation_result.evidence_set
     if (
@@ -102,6 +103,7 @@ def build_target_product_execution(
         pruned_checkpoint_refs = tuple(
             decision.checkpoint_ref for decision in prior_plan.checkpoints
         )
+        prune_product_roots(workspace_root, pruned_economic_facts_refs)
         prune_product_roots(workspace_root, pruned_reconciliation_state_refs)
         prune_product_roots(workspace_root, pruned_checkpoint_refs)
         execution_plan = TargetProductExecutionPlan(
@@ -116,7 +118,10 @@ def build_target_product_execution(
             pruned_checkpoint_refs=pruned_checkpoint_refs,
         )
         return TargetProductExecutionResult(
-            execution_summary=summarize_target_product_execution(execution_plan),
+            execution_summary=_execution_summary_with_economic_fact_prunes(
+                summarize_target_product_execution(execution_plan),
+                pruned_economic_facts_refs,
+            ),
             execution_plan_payload=execution_plan_payload(execution_plan),
             update_mode_requested=update_mode.value,
             update_mode_effective=update_mode.value,
@@ -199,6 +204,11 @@ def build_target_product_execution(
             decision.checkpoint_ref for decision in checkpoint_decisions
         ),
     )
+    pruned_economic_facts_refs = _pruned_economic_facts_refs(
+        prior_plan,
+        economic_facts_decision.economic_facts_ref,
+    )
+    prune_product_roots(workspace_root, pruned_economic_facts_refs)
     prune_product_roots(workspace_root, pruned_reconciliation_state_refs)
     prune_product_roots(workspace_root, pruned_checkpoint_refs)
 
@@ -213,7 +223,10 @@ def build_target_product_execution(
         pruned_reconciliation_state_refs=pruned_reconciliation_state_refs,
         pruned_checkpoint_refs=pruned_checkpoint_refs,
     )
-    execution_summary = summarize_target_product_execution(execution_plan)
+    execution_summary = _execution_summary_with_economic_fact_prunes(
+        summarize_target_product_execution(execution_plan),
+        pruned_economic_facts_refs,
+    )
     return TargetProductExecutionResult(
         economic_facts_id=economic_facts.economic_facts_id,
         economic_facts_ref=economic_facts_decision.economic_facts_ref,
@@ -237,6 +250,34 @@ def build_target_product_execution(
         update_mode_requested=update_mode.value,
         update_mode_effective=update_mode.value,
     )
+
+
+def _execution_summary_with_economic_fact_prunes(
+    summary: TargetProductExecutionSummary,
+    pruned_economic_facts_refs: tuple[str, ...],
+) -> TargetProductExecutionSummary:
+    if not pruned_economic_facts_refs:
+        return summary
+    return TargetProductExecutionSummary(
+        reused_target_product_count=summary.reused_target_product_count,
+        rebuilt_target_product_count=summary.rebuilt_target_product_count,
+        pruned_target_product_count=(
+            summary.pruned_target_product_count + len(pruned_economic_facts_refs)
+        ),
+        refreshed_detail_output_count=summary.refreshed_detail_output_count,
+    )
+
+
+def _pruned_economic_facts_refs(
+    prior_plan: TargetProductExecutionPlan | None,
+    current_economic_facts_ref: str,
+) -> tuple[str, ...]:
+    if prior_plan is None or prior_plan.economic_facts is None:
+        return ()
+    prior_ref = prior_plan.economic_facts.economic_facts_ref
+    if prior_ref in {"", current_economic_facts_ref}:
+        return ()
+    return (prior_ref,)
 
 
 def _ordered_snapshots(
