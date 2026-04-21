@@ -46,8 +46,9 @@ captured as a follow-up issue.
    backticks, quotes, or other shell-sensitive text.
 10. Keep durable delivery metadata and ordinary branch names phase-free and
     roadmap-free.
-    Forward-looking planning docs may use ephemeral planning language only when
-    the document itself is a planning surface.
+    Forward-looking docs may use ephemeral planning language when they carry
+    planning or sequencing detail; `ROADMAP.md` is not the only allowed
+    planning surface.
 
 ## Focus
 

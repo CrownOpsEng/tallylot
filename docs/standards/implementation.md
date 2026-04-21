@@ -127,8 +127,9 @@ Live repo document enforcement stays in script-owned tools, not pytest:
 
 Durable versus planning surfaces:
 
-- planning and forward-looking docs may use roadmap-owned ephemeral tags when
-  that reference convenience belongs to the planning surface itself
+- forward-looking docs may use ephemeral planning language when they carry
+  planning, sequencing, or other future-oriented implementation detail;
+  `ROADMAP.md` is not the only allowed planning surface
 - durable control-plane and delivery surfaces must stay phase-free and
   roadmap-free:
   - `docs/standards/**`

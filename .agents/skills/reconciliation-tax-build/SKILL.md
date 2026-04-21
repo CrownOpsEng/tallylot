@@ -31,8 +31,9 @@ Use this skill for architecture-sensitive core workflow work.
 5. Update `ROADMAP.md` in the same checkpoint when architecture or sequencing
    decisions move.
    Keep execution guidance on durable owner docs first; use planning docs for
-   sequencing detail and other planning surfaces for ephemeral planning terms
-   only when the surface itself is a planning document.
+   sequencing detail, and allow ephemeral planning language on forward-looking
+   docs that carry planning or sequencing detail rather than only on
+   `ROADMAP.md`.
 6. When forward-looking target names, ids, directory families, titles, or
    summaries change, follow the catalog-first rules in
    `docs/standards/engineering.md` and run:

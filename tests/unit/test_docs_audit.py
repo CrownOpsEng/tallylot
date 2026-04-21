@@ -251,7 +251,7 @@ def test_durable_doc_policy_rule_rejects_ephemeral_delivery_labels(
     phase_word_label = _phase_word_label()
     payloads = {
         "docs/status/current-state.md": f"Current runtime keeps {phase_label} wording out.",
-        "docs/reference/evidence-claim-contract.md": (
+        "docs/guides/source-intake.md": (
             f"Bounded contract keeps {phase_word_label} wording out."
         ),
         "docs/concepts/architecture-overview.md": "This surface only links `ROADMAP.md`.",
@@ -282,9 +282,9 @@ def test_durable_doc_policy_rule_rejects_ephemeral_delivery_labels(
         ),
         DocsAuditFinding(
             "policy_alignment.durable_non_planning_surfaces_do_not_use_ephemeral_delivery_labels",
-            "docs/reference/evidence-claim-contract.md",
+            "docs/guides/source-intake.md",
             (
-                "docs/reference/evidence-claim-contract.md uses forbidden "
+                "docs/guides/source-intake.md uses forbidden "
                 f"roadmap/phase delivery labels: {phase_word_label}"
             ),
             None,
@@ -296,8 +296,8 @@ def test_durable_doc_policy_rule_rejects_forbidden_planning_phrases(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     payloads = {
-        "docs/reference/journal-contract.md": "These are not durable Phase 6 artifacts.",
-        "docs/concepts/domain-ontology.md": "The roadmap trigger ladder decides this.",
+        "docs/guides/operator-quickstart.md": "These are not durable Phase 6 artifacts.",
+        "docs/guides/source-intake.md": "The roadmap trigger ladder decides this.",
         "docs/status/current-state.md": "Use this in the next architecture phase.",
     }
 
@@ -317,14 +317,14 @@ def test_durable_doc_policy_rule_rejects_forbidden_planning_phrases(
     assert findings == (
         DocsAuditFinding(
             "policy_alignment.durable_non_planning_surfaces_do_not_use_forbidden_planning_phrases",
-            "docs/reference/journal-contract.md",
-            "docs/reference/journal-contract.md uses forbidden planning phrase: Phase 6 artifacts",
+            "docs/guides/operator-quickstart.md",
+            "docs/guides/operator-quickstart.md uses forbidden planning phrase: Phase 6 artifacts",
             None,
         ),
         DocsAuditFinding(
             "policy_alignment.durable_non_planning_surfaces_do_not_use_forbidden_planning_phrases",
-            "docs/concepts/domain-ontology.md",
-            "docs/concepts/domain-ontology.md uses forbidden planning phrase: roadmap trigger ladder",
+            "docs/guides/source-intake.md",
+            "docs/guides/source-intake.md uses forbidden planning phrase: roadmap trigger ladder",
             None,
         ),
         DocsAuditFinding(
@@ -336,11 +336,19 @@ def test_durable_doc_policy_rule_rejects_forbidden_planning_phrases(
     )
 
 
-def test_durable_doc_policy_surface_list_covers_phase5a_owner_docs() -> None:
+def test_durable_doc_policy_surface_list_excludes_forward_looking_owner_docs() -> None:
     assert {
-        "docs/concepts/unified-adapter-architecture.md",
-        "docs/reference/target-ids-and-refs.md",
-        "docs/status/adapter-delivery-plan.md",
+        "docs/concepts/architecture-overview.md",
+        "docs/reference/journal-contract.md",
+        "docs/status/migration-sequence.md",
+    }.isdisjoint(policy_alignment._DURABLE_NON_PLANNING_SURFACE_PATHS)
+
+
+def test_durable_doc_policy_surface_list_covers_current_runtime_docs() -> None:
+    assert {
+        "docs/guides/operator-quickstart.md",
+        "docs/guides/source-intake.md",
+        "docs/status/current-state.md",
     }.issubset(policy_alignment._DURABLE_NON_PLANNING_SURFACE_PATHS)
 
 
