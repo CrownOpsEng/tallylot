@@ -46,7 +46,10 @@ def load_prior_target_product_execution(
     target_product_execution = raw_payload.get("target_product_execution")
     if not isinstance(target_product_execution, dict):
         return None
-    return _plan_from_payload(target_product_execution)
+    plan = _plan_from_payload(target_product_execution)
+    if plan.signature_version != TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION:
+        return None
+    return plan
 
 
 def plan_target_product_execution(

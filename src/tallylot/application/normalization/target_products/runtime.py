@@ -57,14 +57,11 @@ from .models import (
     TargetProductExecutionPlan,
     TargetProductStageAction,
 )
-from .payloads import (
-    read_fact_annotations,
-    reference_rows_signature,
-    snapshot_rows_signature,
-)
+from .payloads import read_fact_annotations
 from .signatures import (
     checkpoint_reference_signature,
     economic_facts_compatibility_signature,
+    reconciliation_state_snapshot_signature,
 )
 
 
@@ -295,9 +292,7 @@ def resolve_reconciliation_states(
             or kernel_action is TargetProductStageAction.REBUILT
             or not snapshot_path.is_file()
         ):
-            current_snapshot_signature = snapshot_rows_signature(
-                project_balance_snapshots_from_reconciliation_state(state)
-            )
+            current_snapshot_signature = reconciliation_state_snapshot_signature(state)
         snapshot_action = (
             TargetProductStageAction.REFRESHED
             if request.update_mode
@@ -322,7 +317,7 @@ def resolve_reconciliation_states(
             snapshot_signature = (
                 current_snapshot_signature
                 if current_snapshot_signature is not None
-                else snapshot_rows_signature(projected_snapshots)
+                else reconciliation_state_snapshot_signature(state)
             )
         else:
             projected_snapshots = request.dependencies.evidence.read_balance_snapshots(
@@ -441,7 +436,11 @@ def resolve_checkpoints(
             reference_signature = (
                 current_reference_signature
                 if current_reference_signature is not None
-                else reference_rows_signature(projected_references)
+                else checkpoint_reference_signature(
+                    checkpoint=checkpoint,
+                    reconciliation_states=request.reconciliation_states,
+                    evidence_set=request.evidence_set,
+                )
             )
         else:
             projected_references = (

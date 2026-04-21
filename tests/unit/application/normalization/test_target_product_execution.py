@@ -13,6 +13,9 @@ from tallylot.application.normalization.target_products import (
     TargetProductStageAction,
     plan_target_product_execution,
 )
+from tallylot.application.normalization.target_products.payloads import (
+    read_fact_annotations,
+)
 
 
 def test_auto_mode_marks_stage_for_reuse_when_signature_matches_and_persisted_root_exists(
@@ -384,9 +387,86 @@ def test_planner_marks_stale_checkpoint_refs_for_prune(tmp_path: Path) -> None:
     assert plan.pruned_checkpoint_refs == ("checkpoint-1.json",)
 
 
+def test_planner_ignores_prior_execution_with_unknown_signature_version(
+    tmp_path: Path,
+) -> None:
+    kernel_path = tmp_path / "facts.json"
+    _touch(kernel_path)
+    summary_path = tmp_path / "normalization_summary.json"
+    _write_summary(
+        summary_path,
+        signature_version="normalization-target-products-v2",
+        economic_facts={
+            "economic_facts_id": "facts-1",
+            "economic_facts_ref": "facts.json",
+            "fingerprint": "facts-fingerprint",
+            "kernel_action": "rebuilt",
+            "compatibility_action": "refreshed",
+            "compatibility_signature": "compatibility-signature",
+        },
+    )
+
+    plan = _plan_execution(
+        summary_path=summary_path,
+        update_mode=NormalizeUpdateMode.AUTO,
+        claim_set_fingerprint="claim-set-fingerprint",
+        economic_facts=EconomicFactsExecutionCandidate(
+            economic_facts_id="facts-1",
+            economic_facts_ref="facts.json",
+            fingerprint="facts-fingerprint",
+            compatibility_signature="compatibility-signature",
+            kernel_path=kernel_path,
+            detail_paths=(),
+        ),
+        reconciliation_states=(),
+        checkpoints=(),
+    )
+
+    assert plan.economic_facts is not None
+    assert plan.economic_facts.kernel_action is TargetProductStageAction.REBUILT
+
+
+def test_read_fact_annotations_preserves_adapter_metadata(tmp_path: Path) -> None:
+    path = tmp_path / "fact_annotations.json"
+    path.write_text(
+        json.dumps(
+            [
+                {
+                    "fact_id": "fact-1",
+                    "provenance_refs": ["prov-1"],
+                    "review_markers": ["review-1"],
+                    "adapter_metadata": [
+                        {
+                            "namespace": "coinbase",
+                            "values": {"note": "keep-me"},
+                        }
+                    ],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    records = read_fact_annotations(path)
+
+    assert len(records) == 1
+    assert records[0].to_json() == {
+        "fact_id": "fact-1",
+        "provenance_refs": ["prov-1"],
+        "review_markers": ["review-1"],
+        "adapter_metadata": [
+            {
+                "namespace": "coinbase",
+                "values": {"note": "keep-me"},
+            }
+        ],
+    }
+
+
 def _write_summary(
     path: Path,
     *,
+    signature_version: str = "normalization-target-products-v1",
     economic_facts: dict[str, object] | None = None,
     reconciliation_states: list[dict[str, object]] | None = None,
     checkpoints: list[dict[str, object]] | None = None,
@@ -396,7 +476,7 @@ def _write_summary(
         json.dumps(
             {
                 "target_product_execution": {
-                    "signature_version": "normalization-target-products-v1",
+                    "signature_version": signature_version,
                     "update_mode_requested": "auto",
                     "update_mode_effective": "auto",
                     "claim_set_fingerprint": "claim-set-fingerprint",

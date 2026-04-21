@@ -429,6 +429,14 @@ def test_source_normalize_cli_update_modes_drive_target_product_execution(
         second_summary["target_product_execution"]["economic_facts"]["kernel_action"]
         == "reused"
     )
+    assert all(
+        state["snapshot_action"] == "reused"
+        for state in second_summary["target_product_execution"]["reconciliation_states"]
+    )
+    assert all(
+        checkpoint["reference_action"] == "reused"
+        for checkpoint in second_summary["target_product_execution"]["checkpoints"]
+    )
     assert (
         full_update_payload["economic_facts_ref"] == first_payload["economic_facts_ref"]
     )

@@ -50,7 +50,7 @@
         "reconciliation_state_id": "edcb66bda67844384658b856ce4ac114e0eb411e4147da5af091c1bf8da1181d",
         "reconciliation_state_ref": "working/products/reconciliation_states/edcb66bda67844384658b856ce4ac114e0eb411e4147da5af091c1bf8da1181d/reconciliation_state.json",
         "snapshot_action": "refreshed",
-        "snapshot_signature": "[]"
+        "snapshot_signature": "a6769fc1df76eb627929214b439c5ef0360dcb45cbd2a296161d6bc88f341288"
       },
       {
         "fingerprint": "5ceca90fcffb1e2123f5f1cbf85b5768f0438776520da5ff77a475a32a5cfe22",
@@ -58,7 +58,7 @@
         "reconciliation_state_id": "edeba9265425f865577c26963b06f3193086188c38ffb29720f8e01dd0218af4",
         "reconciliation_state_ref": "working/products/reconciliation_states/edeba9265425f865577c26963b06f3193086188c38ffb29720f8e01dd0218af4/reconciliation_state.json",
         "snapshot_action": "refreshed",
-        "snapshot_signature": "[]"
+        "snapshot_signature": "a6769fc1df76eb627929214b439c5ef0360dcb45cbd2a296161d6bc88f341288"
       }
     ],
     "signature_version": "normalization-target-products-v1",

@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 from typing import cast
 
-from tallylot.domain.balances import BalanceReference, BalanceSnapshot
 from tallylot.domain.types import JsonValue
+from tallylot.ports.annotations import AdapterMetadata
 
 from ..annotations import FactAnnotationRecord
 from .models import TargetProductExecutionPlan
@@ -77,28 +77,27 @@ def read_fact_annotations(path: Path) -> tuple[FactAnnotationRecord, ...]:
             for value in cast(list[object], raw_item.get("review_markers", []))
             if isinstance(value, str)
         )
+        adapter_metadata_items: list[AdapterMetadata] = []
+        for raw_metadata in cast(list[object], raw_item.get("adapter_metadata", [])):
+            if not isinstance(raw_metadata, dict):
+                continue
+            adapter_metadata_items.append(
+                _adapter_metadata_from_payload(cast(dict[str, object], raw_metadata))
+            )
         records.append(
             FactAnnotationRecord(
                 fact_id=str(raw_item.get("fact_id", "")),
                 provenance_refs=provenance_refs,
                 review_markers=review_markers,
-                adapter_metadata=(),
+                adapter_metadata=tuple(adapter_metadata_items),
             )
         )
     return tuple(records)
 
 
-def snapshot_rows_signature(snapshots: tuple[BalanceSnapshot, ...]) -> str:
-    return json.dumps(
-        [snapshot.to_row() for snapshot in snapshots],
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-
-
-def reference_rows_signature(references: tuple[BalanceReference, ...]) -> str:
-    return json.dumps(
-        [reference.to_row() for reference in references],
-        sort_keys=True,
-        separators=(",", ":"),
+def _adapter_metadata_from_payload(payload: dict[str, object]) -> AdapterMetadata:
+    values = payload.get("values", {})
+    return AdapterMetadata(
+        namespace=str(payload.get("namespace", "")),
+        values=cast(dict[str, JsonValue], values if isinstance(values, dict) else {}),
     )
