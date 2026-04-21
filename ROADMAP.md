@@ -163,43 +163,27 @@ authority and retained compatibility views:
 - [Product Outputs](docs/workspace/working/products/README.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
-## Phase 5A. Accounting Boundary And Automatic Rerun Correction
+## Phase 5A. Accounting Boundary And Automatic Rerun Correction Is Complete
 
-Goal:
+Phase 5A is complete. Its implemented runtime truth, durable contract updates,
+and control-plane enforcement live on the owner surfaces that now describe the
+automatic fast path and accounting boundary directly:
 
-- align the forward docs to the flat capability taxonomy
-- make `accounting` the owning capability and `Journal` its canonical product
-- confine the existing rebuild validator to developer-only guidance
-- define automatic idempotent rerun guarantees as the normal product behavior
-
-Detailed contract pages:
-
+- [Current State](docs/status/current-state.md)
+- [Operator Quickstart](docs/guides/operator-quickstart.md)
+- [Source Intake](docs/guides/source-intake.md)
+- [Normalize, Screen, And Stage](docs/guides/normalize-screen-stage.md)
 - [Architecture Overview](docs/concepts/architecture-overview.md)
 - [Domain Ontology](docs/concepts/domain-ontology.md)
-- [Reconciliation, Checkpoint, Journal, And Tax Architecture](docs/concepts/reconciliation-tax-architecture.md)
 - [Bridge To Target Mapping](docs/concepts/bridge-to-target-mapping.md)
 - [Pipeline Stage Contracts](docs/concepts/pipeline-stage-contracts.md)
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](docs/concepts/reconciliation-tax-architecture.md)
+- [Evidence And Claim Contract](docs/reference/evidence-claim-contract.md)
+- [Economics Reconciliation Checkpoint Contract](docs/reference/economics-reconciliation-checkpoint-contract.md)
 - [Journal Contract](docs/reference/journal-contract.md)
 - [Target Persistence Reference](docs/reference/target-persistence-reference.md)
 - [Migration Sequence](docs/status/migration-sequence.md)
-
-Scope boundary:
-
-- forward docs only
-- no code or test changes
-- current-state truth remains accurate
-
-Exit criteria:
-
-- no forward-looking doc still routes Phase 6 through the retired
-  application-side `journal` root, the retired domain-side `journal` root, or
-  the retired journal backend-seam name
-- no forward-looking product contract still uses `Replay Gates` or
-  product-facing rebuild framing
-- no user-facing guide presents the rebuild validator as a normal workflow
-- `portfolio`, `performance`, `reporting`, and `investigation` are the
-  reserved future semantic families
-- `visualization` is no longer reserved as a first-class capability
+- [CHANGELOG.md](CHANGELOG.md)
 
 ## Phase 6. Land Canonical Accounting Journal
 

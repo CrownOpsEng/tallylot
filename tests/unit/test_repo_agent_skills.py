@@ -164,6 +164,8 @@ EXPECTED_SKILLS = {
             ".claude/commands/source-intake.md",
             "source intake plan",
             "source intake apply",
+            "source normalize --update-mode auto",
+            "developer-only proof tooling",
         ),
     ),
 }

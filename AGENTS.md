@@ -81,10 +81,12 @@ Do not pre-load every repo doc by default.
 - Keep pytest coverage for docs tooling on synthetic strings or temp repos, not
   on the live repo Markdown tree or live control-plane prose.
 - Keep tracked docs, templates, and control-plane text neutral and durable.
-- Planning and forward-looking docs may use roadmap-owned ephemeral tags when
-  the planning surface itself owns them, but durable control-plane, delivery
-  metadata, branch names, code, tooling, filenames, and generated durable
-  examples must stay phase-free and roadmap-free.
+- Planning docs and other forward-looking planning surfaces may use ephemeral
+  planning terms when the document itself is a planning surface.
+  `ROADMAP.md` is not the only planning document allowed to do that, but
+  durable control-plane, delivery metadata, branch names, code, tooling,
+  filenames, and generated durable examples must stay phase-free and
+  roadmap-free.
 - Keep ordinary test names, assertions, and examples phase-free and
   roadmap-free. Synthetic tooling fixtures may intentionally mention forbidden
   roadmap or phase labels only when they are exercising validator or audit

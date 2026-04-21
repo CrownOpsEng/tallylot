@@ -21,15 +21,17 @@ Use this skill for source intake and normalization workflow execution.
    - `make cli ARGS='source intake apply'`
    - `make cli ARGS='source manifest'`
    - `make cli ARGS='source profile'`
-   - `make cli ARGS='source normalize'`
+   - `make cli ARGS='source normalize --update-mode auto'`
+   - use `--update-mode full-update` to refresh all current stage-owned detail
+     from authoritative truth while reusing unchanged kernels
+   - use `--update-mode rebuild` to bypass fast-path reuse and rebuild the
+     implemented target-product chain from declared upstream truth
    - When the incoming evidence needs a stable source label, seed
      `analysis/issues/source_inventory.csv` and an explicit
      `analysis/issues/source_label_map.csv` row first; the planner uses the
      incoming directory name as the capture scope.
-   - When you need to verify a rebuilt workspace, use
-     `make validate-workspace-replay`
-     against a reference workspace and a clean candidate workspace so replay
-     parity stays explicit.
+   - `make validate-workspace-replay` remains developer-only proof tooling for
+     replay parity; it is not part of the ordinary operator flow
 3. Review the emitted plan, profile, normalization, and issue artifacts before
    moving to the next stage.
 4. Rebuild location inventory only when normalization produced wallet evidence.

@@ -33,6 +33,9 @@ issue templates, issue policy, or proactive follow-up issue handling.
    scratch workflow bookkeeping.
    Keep live docs enforcement script-owned; do not add live-repo Markdown or
    control-plane policy assertions to pytest.
+   Planning docs may use ephemeral planning language when the document itself
+   is a planning surface, but durable control-plane and delivery metadata must
+   stay phase-free and roadmap-free.
 6. Validate docs changes with:
    - `make docs-check`
 7. When the change touches forward-looking target docs, titles, summaries, or
