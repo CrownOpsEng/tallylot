@@ -85,7 +85,7 @@ canonical target naming.
 - [Economics Reconciliation Checkpoint Contract](reference/economics-reconciliation-checkpoint-contract.md): Contract for the bounded `EconomicFacts -> ReconciliationState -> Checkpoint` increment, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views.
 - [Target Ids And Refs](reference/target-ids-and-refs.md): Reusable target ids and ref tuples that are shared across target contracts.
 - [Target Persistence Reference](reference/target-persistence-reference.md): Target persistence, partition-scope, and compatibility placement reference.
-- [Journal Contract](reference/journal-contract.md): Contract for the bounded `Journal` increment, including entry expansion, repo-owned entry checks, backend handoff, and downstream tax boundary rules.
+- [Journal Contract](reference/journal-contract.md): Contract for the bounded `Journal` increment, including entry expansion, repo-owned entry checks, accounting backend handoff, and downstream tax boundary rules.
 
 ### Current-State References
 

@@ -53,9 +53,9 @@ These anchors drive sequencing and acceptance criteria:
   other declared non-kernel detail
 - when authoritative inputs change, the affected stages or partitions rerun
   automatically while unchanged partitions skip recalculation
-- safe full-rebuild overrides may bypass skip heuristics only when they can
-  rebuild from the declared upstream truth without losing manual adjustments
-  outside the owned generated surface
+- safe full-rebuild overrides may bypass cache or fingerprint skips only when
+  they can rebuild from the declared upstream truth without losing manual
+  adjustments outside the owned generated surface
 - CoinTracking remains an edge adapter and oracle surface, not the runtime
   ledger model
 - broader grouped and query surfaces remain deferred until the trigger ladder
@@ -200,7 +200,7 @@ Exit criteria:
   reserved future semantic families
 - `visualization` is no longer reserved as a first-class capability
 
-## Phase 6. Land `Journal`
+## Phase 6. Land Canonical Accounting Journal
 
 Goal:
 
@@ -218,13 +218,17 @@ Scope boundary:
 
 - `Journal` consumes authoritative `EconomicFacts` and `Checkpoint` kernels
   from the bounded downstream slice
-- `Journal` is the authoritative downstream product for
+- `Journal` is the canonical accounting product and write model for
   `JournalEntryRecord`, `PostingRecord`, `EntryCheckRecord`, journal-owned
   gaps, and backend-neutral journal detail
-- `ledger_cli` is the first journal backend id, while `ledger-cli` remains a
-  downstream validation and rendering tool only
-- the journal backend seam is intentionally replaceable, and backend
-  invocation plus backend-specific artifacts remain downstream of `Journal`
+- `accounting` is the owning capability for canonical journal construction,
+  accounting entry checks, backend orchestration, and bounded accounting
+  inspection
+- `ledger_cli` is the first accounting backend id, while `ledger-cli`
+  remains a downstream corroboration and inspection tool only
+- the accounting backend seam is intentionally replaceable, and backend
+  invocation plus backend-specific artifacts remain derived outputs
+  downstream of `Journal`
 - `TaxInputs` and `TaxOutputs` keep identity and kernel meaning anchored to
   authoritative `Checkpoint` plus `EconomicFacts`; this slice does not add
   `journal_ref` or backend-derived identity to tax products
@@ -233,24 +237,45 @@ Implementation slices:
 
 - land canonical journal expansion, repo-owned entry checks, backend
   orchestration, and backend-neutral detail generation under
-  `application/journal/`
-- land `ports/journal_backends.py` for the replaceable journal backend seam
-  and `infrastructure/journal_backends/ledger_cli/` for the first
-  subprocess-backed backend implementation
+  `application/accounting/`
+- land `domain/accounting/` for the target accounting family
+- land `ports/accounting_backends.py` for the replaceable accounting backend
+  seam and `infrastructure/ledger_cli/` for the first subprocess-backed
+  backend implementation
 - persist the journal kernel plus backend-neutral detail at the journal root
   and keep `ledger_cli` artifacts under
   `working/products/journals/<journal_id>/backends/ledger_cli/`
 - keep current compatibility renderers and fact-output adapters on their
   existing compatibility path until their own cutover slices land
 
+Workflow scope:
+
+- build canonical accounting journal
+- inspect journal
+- explain blocked entries
+- validate through the selected accounting backend
+- use bounded `ledger-cli` inspection commands for accounting corroboration:
+  `print`, `accounts`, `balance`, and `register`
+
+Explicitly exclude:
+
+- broad reporting
+- dashboards
+- portfolio analytics
+- performance analytics
+- visualization datasets
+
 Exit criteria:
 
-- repeated runs on unchanged upstream products preserve `journal_id`,
+- repeated runs on unchanged authoritative inputs preserve `journal_id`,
   `entry_id`, `posting_id`, and `entry_check_id`
+- deterministic reruns on unchanged authoritative inputs preserve the owned
+  generated outputs
 - blocked entries emit explicit journal-owned checks or gaps and zero postings
   instead of silent omission
-- `ledger_cli` validation replays from authoritative `Journal` kernels alone
-  without changing journal authority or repairing data
+- reruns do not corrupt generated state or append stale rows
+- `ledger_cli` corroboration reruns from authoritative `Journal` kernels
+  alone without changing journal authority or repairing data
 - later backends can replace `ledger_cli` without redefining journal ids,
   journal-owned check outcomes, or tax identity
 - no ledger-derived identity leaks into tax
@@ -304,7 +329,7 @@ Exit criteria:
   accepted checkpoint truth without treating CoinTracking tax reports as the
   ledger
 - `TaxOutputs` remains a narrow tax-output exception rather than the permanent
-  home of general reporting, dashboards, portfolio views, visualization
+  home of general reporting, dashboards, portfolio views, performance
   datasets, or investigation workflows
 
 ## Phase 8. Repo-Only Support Reset
@@ -369,8 +394,8 @@ Deliver:
 - broader capability-owned derived read models and projections if no earlier
   trigger already activated them
 - reserved package families stay explicit when they are finally needed:
-  `application/reporting/`, `application/portfolio/`,
-  `application/visualization/`, and `application/investigation/`
+  `application/portfolio/`, `application/performance/`,
+  `application/reporting/`, and `application/investigation/`
 
 Exit criteria:
 

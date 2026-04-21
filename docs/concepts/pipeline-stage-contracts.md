@@ -67,8 +67,8 @@ Shared rules:
   families during the tax-first phases
 - if a stage cannot support a required decision, it emits explicit blockers,
   unresolved records, or deferred records rather than inventing a fallback
-- replay and parity gates operate on kernels first and inspect sidecars
-  separately only where the slice requires them
+- deterministic rerun and parity gates operate on kernels first and inspect
+  sidecars separately only where the slice requires them
 
 ## Shared Product Rules
 
@@ -161,7 +161,7 @@ Shared rules:
 - the product header plus kernel record families make up the authoritative
   kernel
 - the kernel holds stable ids, ordering keys, owning decisions, and the
-  downstream-required references needed for replay and reducers
+  downstream-required references needed for deterministic rerun and reducers
 - sidecars hold provenance detail, explanation, reviews, comparison traces,
   policy notes, and other non-kernel detail
 - sidecars must not become the only copy of required state or business
@@ -1174,6 +1174,8 @@ Handoff to `Journal` and `TaxInputs`:
 Purpose:
 
 - journal expansion and entry checks over accepted truth
+- `Journal` is the canonical accounting product emitted by the accounting
+  capability
 
 Product header:
 
@@ -1545,7 +1547,7 @@ Scope fence:
 
 - `TaxOutputs` owns tax-policy output content for the active tax path
 - `TaxOutputs` does not become the long-term home of general reporting,
-  dashboards, portfolio views, visualization datasets, or investigation
+  dashboards, portfolio views, performance datasets, or investigation
   workflows
 
 Product-root cardinality:
@@ -1616,13 +1618,13 @@ locality rules defined elsewhere:
 - [Bridge To Target Mapping](bridge-to-target-mapping.md) for the primary
   cutover rules and migration authority matrix
 - [Evidence And Claim Contract](../reference/evidence-claim-contract.md)
-  for the bounded evidence/claim replay and parity contract
+  for the bounded evidence/claim deterministic rerun and parity contract
 - [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
   for the bounded
   `EconomicFacts -> ReconciliationState -> Checkpoint`
   contract
 - [Journal Contract](../reference/journal-contract.md) for the bounded
-  `Journal` replay, backend, and downstream handoff contract
+  `Journal` deterministic rerun, backend, and downstream handoff contract
 - [Domain Ontology](domain-ontology.md) for identity seams, refs,
   `AssertionValue`, and package ownership
 - [Gap, Review, And Shared Attachment](gaps-and-reviews.md) for `GapRecord`,

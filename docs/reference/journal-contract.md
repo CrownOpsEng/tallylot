@@ -1,6 +1,6 @@
 ---
 title: "Journal Contract"
-summary: "Contract for the bounded `Journal` increment, including entry expansion, repo-owned entry checks, backend handoff, and downstream tax boundary rules."
+summary: "Contract for the bounded `Journal` increment, including entry expansion, repo-owned entry checks, accounting backend handoff, and downstream tax boundary rules."
 doc_type: reference
 audience: human
 owner: repo
@@ -21,8 +21,8 @@ related:
 Use this page when implementing or reviewing the bounded `Journal` increment
 after the bounded `EconomicFacts -> ReconciliationState -> Checkpoint`
 contract. This document freezes scope, ids, backend boundaries, cutovers,
-parity, replay, and allowed drift for the first journal slice over accepted
-downstream truth.
+parity, idempotent rerun guarantees, and allowed drift for the first journal
+slice over accepted downstream truth.
 
 **Contract-local example:** This contract still uses the bounded
 planner-enabled Coinbase slice and its accepted checkpoint truth only to pin
@@ -40,9 +40,9 @@ This slice is:
   that opening truth authoritative
 - explicit `EntryCheckRecord` emission and journal-owned gaps for unsupported
   mappings or blocked entries
-- repo-owned backend orchestration over a replaceable journal backend seam,
+- repo-owned backend orchestration over a replaceable accounting backend seam,
   with `ledger_cli` as the first backend id and `ledger-cli` as the first
-  downstream tool
+  downstream corroboration and inspection tool
 - continued coexistence with current `cointracking_csv` compatibility
   rendering, which remains outside this slice
 
@@ -91,23 +91,65 @@ Downstream-input rules:
 
 ## Backend Seam And Ownership
 
-This slice freezes one replaceable journal backend boundary:
+This slice freezes one replaceable accounting backend boundary:
 
-- `application/journal/` owns canonical journal expansion, repo-owned entry
-  checks, backend orchestration, and backend-neutral journal detail generation
-- `ports/journal_backends.py` owns `JournalBackend` and
-  `JournalBackendRegistryPort`
-- `infrastructure/journal_backends/ledger_cli/` owns the first backend
-  implementation
+- `application/accounting/` owns canonical journal construction, repo-owned
+  entry checks, accounting backend orchestration, and bounded accounting
+  inspection views
+- `ports/accounting_backends.py` owns `AccountingBackend` and
+  `AccountingBackendRegistryPort`
+- `infrastructure/ledger_cli/` owns the first backend implementation
 - the first backend implementation is subprocess-backed and invokes
   `ledger-cli`; it is not an embedded journal authority
-- the current fact-output rendering path remains the output boundary over
-  facts and compatibility views
+- the current fact-output compatibility rendering path remains the output
+  boundary over facts and compatibility views
 - `ports/output_adapters.py` remains the current output-adapter seam and is
   not reused for `Journal`
-- the journal backend seam is intentionally replaceable so later repo-owned
+- the accounting backend seam is intentionally replaceable so later repo-owned
   code or another backend can plug in without redefining journal authority,
   journal ids, or tax identity
+
+Backend request and result contract:
+
+- `AccountingBackendRequest`
+  - `journal_id`
+  - `journal_root_ref`
+  - `requested_operations`
+  - `output_root_ref`
+- `AccountingBackendResult`
+  - `backend_id`
+  - `backend_version`
+  - `operations_run`
+  - `status`
+  - `artifact_manifest`
+  - `findings`
+- `artifact_manifest` entries include:
+  - `artifact_kind`
+  - `relative_path`
+  - `content_type`
+- `findings` entries include:
+  - `entry_id`
+  - optional `posting_id`
+  - `finding_kind`
+  - `severity`
+  - `message`
+  - optional backend-native code
+
+Bounded Phase 6 backend operations:
+
+- `print`
+- `accounts`
+- `balance`
+- `register`
+
+Not part of the Phase 6 backend seam:
+
+- `equity`
+- `csv`
+- `xml`
+- broader analytics or reporting command families
+- debug-oriented `--verify` runtime assertions as a normal product validation
+  lane
 
 ## Chart, Unit, And Origin Restrictions
 
@@ -151,8 +193,6 @@ Backend-specific `ledger_cli` files:
 
 - `working/products/journals/<journal_id>/backends/ledger_cli/journal.ledger`
 - `working/products/journals/<journal_id>/backends/ledger_cli/validation_findings.json`
-- `working/products/journals/<journal_id>/backends/ledger_cli/report.xml`
-  when the first backend emits a machine-readable report export
 
 Rules:
 
@@ -177,9 +217,9 @@ Rules:
 - `validation_findings.json` keys detail by `entry_id` plus optional
   `posting_id` and records backend-local findings only after the authoritative
   kernel already names the checked scope
-- `report.xml` is the optional machine-readable backend export when structured
-  backend output is needed; scraped human-readable report text is not a
-  contract surface
+- `print`, `accounts`, `balance`, and `register` outputs are generated on
+  demand for accounting inspection and verification; they are not durable
+  Phase 6 artifacts
 - persisted detail rows sort lexicographically by their owning stable ids and
   remain reproducible from authoritative `Journal` kernels plus declared
   upstream refs
@@ -189,16 +229,16 @@ Rules:
 This slice uses two explicit validation lanes:
 
 - Lane A is repo-owned entry checking over the canonical `Journal` kernel
-- Lane B is `ledger_cli` validation over generated backend artifacts produced
-  from that same `Journal`
+- Lane B is `ledger_cli` corroboration over generated backend artifacts
+  produced from that same `Journal`
 
 Lane rules:
 
 - Lane A is authoritative for journal-owned check outcomes
-- Lane B is corroborating and backend-local
-- Lane B must replay from `Journal` alone; `journal.ledger`,
-  `validation_findings.json`, and `report.xml` are generated outputs of that
-  replay, not extra meaning inputs
+- Lane B is corroborating and backend-local only
+- Lane B must rerun from `Journal` alone; `journal.ledger`,
+  `validation_findings.json`, and on-demand inspection outputs are generated
+  outputs of that rerun, not extra meaning inputs
 - Lane B may emit findings without changing `journal_id`, `entry_id`,
   `posting_id`, `entry_check_id`, or any `EntryCheckRecord` outcome
 - backend-local balance assertions, formatting requirements, or rendering
@@ -206,6 +246,8 @@ Lane rules:
   semantics
 - repo-owned entry checks and backend validation may catch different failure
   modes, but backend findings do not replace journal-owned gaps or entry checks
+- `ledger-cli` does not mint ids, define tax identity, or become authoritative
+  storage
 
 ## Kernel Cardinality And Ownership
 
@@ -299,7 +341,7 @@ Rules:
   slice must read `Journal` directly and must not rebuild postings from
   `EconomicFacts`, `Checkpoint`, or compatibility bridge views
 - `ledger_cli` is the first backend reader of `Journal`, and later backends
-  must read through the declared journal backend seam rather than through
+  must read through the declared accounting backend seam rather than through
   fact-output adapters or output-rendering helpers
 - current `cointracking_csv` and bridge compatibility outputs remain on their
   existing compatibility path; this slice does not repoint them or use
@@ -334,9 +376,9 @@ must preserve all of the following:
   `cointracking_csv` output, because this slice does not own or repoint those
   readers
 
-## Replay Gates
+## Idempotent Rerun Guarantees
 
-The slice is replay-safe only when repeated runs on unchanged authoritative
+The slice is rerun-safe only when repeated runs on unchanged authoritative
 upstream products preserve:
 
 - identical `Journal` kernel fingerprints
@@ -352,7 +394,7 @@ upstream products preserve:
   rows and journal-owned gap refs, when unchanged upstream truth still blocks
   expansion
 
-Replay checks must also prove that incidental upstream ordering changes do not
+Rerun checks must also prove that incidental upstream ordering changes do not
 change `journal_id`, `entry_id`, `posting_id`, `entry_check_id`, or any
 declared backend or journal-native output.
 
@@ -396,5 +438,5 @@ This slice does not:
   chart namespaces, or output-adapter-owned chart namespaces
 - treat `ledger-cli` as the ledger of record or as the source of authoritative
   journal ids
-- route the journal backend seam through the current fact-output rendering path
-  or `ports/output_adapters.py`
+- route the journal backend seam through the current fact-output compatibility
+  rendering path or `ports/output_adapters.py`

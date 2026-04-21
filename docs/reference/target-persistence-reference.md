@@ -41,6 +41,11 @@ not a generic sidecar bucket.
 
 When persisting target products:
 
+- classify persisted content as one of:
+  - authoritative kernels
+  - product-local detail
+  - backend-specific derived accounting artifacts
+  - future semantic read models
 - persist one authoritative kernel per declared partition scope
 - keep authoritative kernels under product-owned directories rather than
   migration-era source or checkpoint containers
@@ -60,6 +65,8 @@ When persisting target products:
   non-kernel detail in sidecars
 - backend-specific generated artifacts are non-authoritative detail, not
   compatibility views, tax inputs, or product identity inputs
+- backend-generated artifacts are never authoritative storage and never the
+  primary cross-capability query API
 - keep grouped readiness as tax-output-local, narrow rendering-local, or
   compatibility-local derived output until the roadmap trigger ladder
   activates a capability-owned read-model surface

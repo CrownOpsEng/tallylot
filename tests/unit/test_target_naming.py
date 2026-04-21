@@ -1370,10 +1370,19 @@ def test_real_repo_catalog_loads_core_family_and_identifier_data() -> None:
     assert "ReadinessRecord" not in record_names
     assert "ReadinessRollupRecord" not in record_names
     assert "application/assessment/" not in catalog.canonical_families.package_paths
+    assert "application/accounting/" in catalog.canonical_families.package_paths
     assert "application/reporting/" in catalog.canonical_families.package_paths
+    assert "application/performance/" in catalog.canonical_families.package_paths
     assert "application/portfolio/" in catalog.canonical_families.package_paths
-    assert "application/visualization/" in catalog.canonical_families.package_paths
     assert "application/investigation/" in catalog.canonical_families.package_paths
+    assert "domain/accounting/" in catalog.canonical_families.package_paths
+    assert "application/claim/" not in catalog.canonical_families.package_paths
+    assert "application/checkpoint/" not in catalog.canonical_families.package_paths
+    assert "application/journal/" not in catalog.canonical_families.package_paths
+    assert "application/visualization/" not in catalog.canonical_families.package_paths
+    assert "domain/claim/" not in catalog.canonical_families.package_paths
+    assert "domain/checkpoint/" not in catalog.canonical_families.package_paths
+    assert "domain/journal/" not in catalog.canonical_families.package_paths
     assert "assessment view" not in catalog.canonical_tokens.phrases
     assert "readiness rollup" not in catalog.canonical_tokens.phrases
     assert "readiness_rollup_id" not in catalog.canonical_tokens.snake

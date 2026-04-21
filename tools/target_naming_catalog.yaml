@@ -192,33 +192,29 @@ canonical_families:
       id: tax_unsupported_input_id
       refs: []
   package_paths:
-    - application/claim/
-    - application/checkpoint/
+    - application/accounting/
     - application/compatibility/
     - application/economics/
     - application/evidence/
     - application/intake/
-    - application/journal/
     - application/investigation/
     - application/normalization/
+    - application/performance/
     - application/portfolio/
     - application/profiling/
     - application/reconciliation/
     - application/reporting/
     - application/rendering/
     - application/tax/
-    - application/visualization/
     - application/workspace/
+    - domain/accounting/
     - domain/assessment/
     - domain/assertion/
-    - domain/claim/
-    - domain/checkpoint/
     - domain/contract/
     - domain/counterparty/
     - domain/economics/
     - domain/evidence/
     - domain/instrument/
-    - domain/journal/
     - domain/location/
     - domain/ownership/
     - domain/position/

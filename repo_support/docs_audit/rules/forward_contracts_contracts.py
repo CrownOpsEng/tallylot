@@ -284,11 +284,10 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
             for needle in (
                 "`domain/assessment/`",
                 "`application/compatibility/`",
-                "`application/claim/`",
+                "`application/evidence/`",
                 "`application/economics/`",
                 "`application/reconciliation/`",
-                "`application/checkpoint/`",
-                "`application/journal/`",
+                "`application/accounting/`",
                 "`application/tax/`",
                 "Readiness is not a shared assessment family.",
                 "do not create a shared readiness record family",

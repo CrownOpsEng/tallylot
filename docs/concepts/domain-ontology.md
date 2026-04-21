@@ -248,7 +248,8 @@ Rules:
 
 ## Temporal Semantics
 
-Time rules must survive replay, retroactive correction, and cross-stage audit.
+Time rules must survive deterministic rerun, retroactive correction, and
+cross-stage audit.
 
 Required distinctions:
 
@@ -265,7 +266,7 @@ Rules:
 - retroactive corrections emit superseding records with explicit lineage rather
   than mutating prior accepted truth in place
 - later stages may compare `effective_at` and `recorded_at`, but they should
-  not collapse them into one timeline just to make replay look simpler
+  not collapse them into one timeline just to make rerun logic look simpler
 
 ## Economic Model
 
@@ -402,9 +403,11 @@ Bridge-specific classification rules live in
 - distinguish concept, ref, and record names explicitly:
   `BasisPool` is a concept, `BasisPoolRef` is an identity seam, and
   `*Record` names belong to persisted kernels
-- keep `journal` aligned across the end-state stage vocabulary, package roots,
-  and product-adjacent prose; reserve `accounting` for broader prose or
-  bridge-local hint families
+- keep `Journal` aligned as the accounting product and record family
+- keep `accounting` aligned as the capability and package family that owns
+  `Journal`
+- keep `AccountingIntentHint` as bridge-local hint vocabulary rather than
+  promoting it into the target capability or product naming
 - keep `economics` aligned across stage vocabulary, package roots, and
   product-adjacent prose; reserve `economic` for adjective use inside the
   owned product family such as `EconomicFacts`
@@ -428,7 +431,7 @@ Bridge-specific classification rules live in
 
 ## Required Package Ownership
 
-The target package layout follows stage ownership and is not advisory.
+The target package layout follows capability ownership and is not advisory.
 
 **Exception rationale:** `domain/assessment/` stays in this page only as the
 shared root for the nested `gap/` and `review/` families plus shared
@@ -444,19 +447,18 @@ Required domain ownership:
 - `domain/instrument/`, `domain/location/`, `domain/ownership/`,
   `domain/counterparty/`, `domain/contract/`, and `domain/position/` for
   identity concepts, refs, and stable identity seams
-- `domain/evidence/` for evidence members, observations, and selection
-  decisions
-- `domain/claim/` for claims, claim scopes, claim bundles, and
-  claim-bundle decisions
+- `domain/evidence/` for evidence members, observations, selection decisions,
+  claims, claim scopes, claim bundles, and claim-bundle decisions
 - `domain/economics/` for events, legs, valuations, settlement status, and
   lifecycle events
 - `domain/assertion/` for `AssertionValue` and its variants
 - `domain/assessment/` as the shared root for nested `gap/` and `review/`
   families plus shared attachment constructs such as `SubjectRef`
 - `domain/reconciliation/` for continuity segments, event links, balance
-  targets, and checkpoint proposal records
-- `domain/checkpoint/` for accepted checkpoint truth
-- `domain/journal/` for journal models
+  targets, checkpoint proposal records, accepted checkpoint truth, and
+  checkpoint assertions
+- `domain/accounting/` for journal records, posting concepts, and
+  accounting-specific value objects
 - `domain/tax/` for tax inputs, basis transitions, tax-policy contracts,
   tax carry-forward records, tax unsupported-input records, and outputs
 
@@ -466,14 +468,15 @@ Required application ownership:
 - `application/profiling/` for capture profile construction, inventory
   inspection, and timezone review
 - `application/evidence/` for shared statement extraction, evidence selection,
-  and provenance locator handling
-- `application/claim/` for `ClaimSet` construction from evidence
+  provenance locator handling, and `ClaimSet` construction from evidence
 - `application/economics/` for `EconomicFacts` construction
 - `application/compatibility/` for bridge compatibility views only
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists
 - `application/reconciliation/` for continuity, linkage, balance target
-  evaluation, and checkpoint proposal records
+  evaluation, checkpoint proposal records, `Checkpoint` acceptance, manual
+  assertion intake, and opening-state adoption
+
 `domain/assessment/` stays generic only because it is the shared root for the
 nested `gap/` and `review/` families plus shared attachment constructs such as
 `SubjectRef`.
@@ -482,13 +485,12 @@ standards decision.
 `application/compatibility/` is migration-only and must not become a durable
 application center.
 
-- `application/checkpoint/` for `Checkpoint` acceptance, manual assertion
-  intake, and opening-state adoption
-- `application/journal/` for journal expansion, entry checks, and journal
-  views
+- `application/accounting/` for canonical journal construction, accounting
+  entry checks, accounting backend orchestration, and bounded accounting
+  inspection views
 - `application/tax/` for `TaxInputs` construction, basis transitions, policy
   selection, and `TaxOutputs` generation
-- `application/rendering/` for downstream rendering orchestration
+- `application/rendering/` for downstream format and transport orchestration
 - `application/workspace/` for workspace resolution and initialization
 
 Assessment behavior stays in the owning application slice. Shared
@@ -501,11 +503,10 @@ shared application assessment center.
 Reserve these future application families conceptually, but not as required
 package ownership yet:
 
-- application/reporting/ for cross-stage or cross-product reporting
-- application/portfolio/ for holdings and portfolio views
-- application/visualization/ for charts, dashboards, and visualization
-  datasets
-- application/investigation/ for drill-down and investigation workflows that
+- `application/reporting/` for cross-stage or cross-product reporting
+- `application/performance/` for performance views and performance datasets
+- `application/portfolio/` for holdings and portfolio views
+- `application/investigation/` for drill-down and investigation workflows that
   are not compatibility-only
 
 Rules:
@@ -514,12 +515,15 @@ Rules:
   requires one of them
 - do not introduce a generic read-side sink while waiting for a trigger
 - do not pre-create all reserved families when only one capability is needed
+- semantic read models belong to the owning capability
+- delivery and rendering belong to `application/rendering/` only when the
+  concern is format or transport rather than meaning
 
 Boundary rules:
 
 - `application/normalization/` is current-state truth now, but the
   forward-looking target model treats it as migration-era orchestration that
-  splits into `evidence`, `claim`, `economics`, and `compatibility`
+  splits into `evidence`, `economics`, `reconciliation`, and `compatibility`
 - `interfaces/` orchestrates services only
 - `infrastructure/` implements ports
 - `application/` depends on domain and ports

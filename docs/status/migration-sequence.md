@@ -218,13 +218,17 @@ scope.
 
 Required posture:
 
-- `Journal` becomes authoritative for in-scope journal entry expansion,
-  repo-owned entry-check results, and journal-owned gaps
-- `ledger_cli` is the first backend reader that consumes `Journal` directly
-  through the declared journal backend seam
-- new journal renderers, journal inspection outputs, and `ledger_cli` backend
-  surfaces read `Journal` directly rather than rebuilding postings from
-  compatibility facts or checkpoint helpers
+- `Journal` becomes authoritative as the canonical accounting product for
+  in-scope journal entry expansion, repo-owned entry-check results, and
+  journal-owned gaps
+- `application/accounting/` is the forward owning capability for canonical
+  journal construction, accounting entry checks, backend orchestration, and
+  bounded accounting inspection views
+- `ports/accounting_backends.py` is the replaceable backend seam, and
+  `ledger_cli` is the first backend reader that consumes `Journal` directly
+- new journal renderers, accounting inspection outputs, and `ledger_cli`
+  backend surfaces read `Journal` directly rather than rebuilding postings
+  from compatibility facts or checkpoint helpers
 - `cointracking_csv` and other current compatibility outputs remain on their
   existing compatibility path until a later cutover names them explicitly
 - `TaxInputs` keep product identity and kernel meaning anchored to
@@ -238,7 +242,7 @@ Cutover gates:
 - blocked journal mappings remain explicit through `EntryCheckRecord` rows,
   journal-owned gaps, and declared backend-local findings when the backend
   detects an additional downstream issue
-- canonical journal replay and `ledger_cli` validation replay both run from
+- canonical journal reruns and `ledger_cli` corroboration reruns both run from
   authoritative `Journal` kernels alone
 - no `journal_ref`, backend file hash, or backend-local id leaks into tax
   identity
@@ -301,7 +305,8 @@ Retire or demote a bridge surface only when all of the following are true:
 - the slice names one authoritative writer for the affected scope
 - every active reader has a declared target reader or derived compatibility
   view
-- parity and replay gates for the affected slice pass on unchanged evidence
+- parity and deterministic rerun gates for the affected slice pass on
+  unchanged evidence
 - current-state docs are updated if the implemented live runtime surface
   changes
 
