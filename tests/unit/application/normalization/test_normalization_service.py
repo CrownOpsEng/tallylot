@@ -478,6 +478,45 @@ def test_normalization_auto_mode_refreshes_detail_outputs_when_prior_signatures_
     )
 
 
+def test_normalization_rerun_ignores_invalid_prior_target_product_summary(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(
+        tmp_path,
+        source="coinbase",
+        source_dir=fixture_raw_dir("coinbase", "retail_buy_renamed"),
+    )
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary_path = output_dir / "normalization_summary.json"
+    summary_path.write_text("{invalid-json", encoding="utf-8")
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert summary["target_product_execution"]["economic_facts"] is not None
+    assert summary["target_product_execution"]["economic_facts"]["kernel_action"] == (
+        "rebuilt"
+    )
+
+
 def test_normalization_rerun_prunes_stale_balance_reference_issue_file_when_clean(
     tmp_path: Path,
 ) -> None:
@@ -698,6 +737,9 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
             window_end="2025-12-31 23:59:59",
         )
     )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
 
     assert response.fact_count == expected["fact_count"]
     assert response.issue_count == expected["issue_count"]
@@ -708,6 +750,16 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
         "expects_reconciliation_states"
     ]
     assert (response.checkpoint_refs != ()) is expected["expects_checkpoints"]
+    assert "target_product_execution" in summary
+    assert (
+        summary["target_product_execution"]["economic_facts"] is not None
+    ) is expected["expects_economic_facts"]
+    assert (
+        summary["target_product_execution"]["reconciliation_states"] != []
+    ) is expected["expects_reconciliation_states"]
+    assert (summary["target_product_execution"]["checkpoints"] != []) is expected[
+        "expects_checkpoints"
+    ]
     if expected["expects_evidence_set"]:
         assert response.evidence_set_ref == (
             "working/products/evidence_sets/"

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+from json import JSONDecodeError
 from pathlib import Path
 from typing import cast
 
@@ -37,17 +38,17 @@ class TargetProductExecutionPlanningRequest:
 def load_prior_target_product_execution(
     summary_path: Path,
 ) -> TargetProductExecutionPlan | None:
-    if not summary_path.is_file():
+    raw_payload = _read_summary_payload(summary_path)
+    if raw_payload is None:
         return None
-    payload = json.loads(summary_path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        return None
-    raw_payload = cast(dict[str, JsonValue], payload)
     target_product_execution = raw_payload.get("target_product_execution")
     if not isinstance(target_product_execution, dict):
         return None
-    plan = _plan_from_payload(target_product_execution)
-    if plan.signature_version != TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION:
+    plan = _plan_from_payload_or_none(target_product_execution)
+    if (
+        plan is None
+        or plan.signature_version != TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION
+    ):
         return None
     return plan
 
@@ -416,3 +417,24 @@ def _string_tuple(value: object) -> tuple[str, ...]:
         if isinstance(raw_item, str):
             string_items.append(raw_item)
     return tuple(string_items)
+
+
+def _read_summary_payload(summary_path: Path) -> dict[str, JsonValue] | None:
+    if not summary_path.is_file():
+        return None
+    try:
+        payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    except (JSONDecodeError, OSError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return cast(dict[str, JsonValue], payload)
+
+
+def _plan_from_payload_or_none(
+    payload: dict[str, JsonValue],
+) -> TargetProductExecutionPlan | None:
+    try:
+        return _plan_from_payload(payload)
+    except (AttributeError, TypeError, ValueError):
+        return None

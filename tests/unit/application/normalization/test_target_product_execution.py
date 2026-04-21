@@ -13,6 +13,9 @@ from tallylot.application.normalization.target_products import (
     TargetProductStageAction,
     plan_target_product_execution,
 )
+from tallylot.application.normalization.target_products.cleanup import (
+    prune_product_roots,
+)
 from tallylot.application.normalization.target_products.payloads import (
     read_fact_annotations,
 )
@@ -424,6 +427,84 @@ def test_planner_ignores_prior_execution_with_unknown_signature_version(
 
     assert plan.economic_facts is not None
     assert plan.economic_facts.kernel_action is TargetProductStageAction.REBUILT
+
+
+def test_planner_ignores_invalid_prior_execution_json(tmp_path: Path) -> None:
+    kernel_path = tmp_path / "facts.json"
+    _touch(kernel_path)
+    summary_path = tmp_path / "normalization_summary.json"
+    summary_path.write_text("{not-json", encoding="utf-8")
+
+    plan = _plan_execution(
+        summary_path=summary_path,
+        update_mode=NormalizeUpdateMode.AUTO,
+        claim_set_fingerprint="claim-set-fingerprint",
+        economic_facts=EconomicFactsExecutionCandidate(
+            economic_facts_id="facts-1",
+            economic_facts_ref="facts.json",
+            fingerprint="facts-fingerprint",
+            compatibility_signature="compatibility-signature",
+            kernel_path=kernel_path,
+            detail_paths=(),
+        ),
+        reconciliation_states=(),
+        checkpoints=(),
+    )
+
+    assert plan.economic_facts is not None
+    assert plan.economic_facts.kernel_action is TargetProductStageAction.REBUILT
+
+
+def test_planner_ignores_invalid_prior_execution_actions(tmp_path: Path) -> None:
+    kernel_path = tmp_path / "facts.json"
+    _touch(kernel_path)
+    summary_path = tmp_path / "normalization_summary.json"
+    _write_summary(
+        summary_path,
+        economic_facts={
+            "economic_facts_id": "facts-1",
+            "economic_facts_ref": "facts.json",
+            "fingerprint": "facts-fingerprint",
+            "kernel_action": "broken",
+            "compatibility_action": "refreshed",
+            "compatibility_signature": "compatibility-signature",
+        },
+    )
+
+    plan = _plan_execution(
+        summary_path=summary_path,
+        update_mode=NormalizeUpdateMode.AUTO,
+        claim_set_fingerprint="claim-set-fingerprint",
+        economic_facts=EconomicFactsExecutionCandidate(
+            economic_facts_id="facts-1",
+            economic_facts_ref="facts.json",
+            fingerprint="facts-fingerprint",
+            compatibility_signature="compatibility-signature",
+            kernel_path=kernel_path,
+            detail_paths=(),
+        ),
+        reconciliation_states=(),
+        checkpoints=(),
+    )
+
+    assert plan.economic_facts is not None
+    assert plan.economic_facts.kernel_action is TargetProductStageAction.REBUILT
+
+
+def test_prune_product_roots_skips_refs_outside_workspace_products(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    outside_root = tmp_path / "outside"
+    outside_root.mkdir()
+    sentinel = outside_root / "keep.txt"
+    sentinel.write_text("keep", encoding="utf-8")
+
+    prune_product_roots(workspace_root, ("../outside/keep.txt",))
+
+    assert sentinel.read_text(encoding="utf-8") == "keep"
+    assert outside_root.is_dir()
 
 
 def test_read_fact_annotations_preserves_adapter_metadata(tmp_path: Path) -> None:

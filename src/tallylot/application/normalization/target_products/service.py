@@ -91,8 +91,19 @@ def build_target_product_execution(
         or evidence_set is None
         or translation_result.claim_set_ref == ""
     ):
+        execution_plan = TargetProductExecutionPlan(
+            signature_version=TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION,
+            update_mode_requested=update_mode.value,
+            update_mode_effective=update_mode.value,
+            claim_set_fingerprint="",
+            economic_facts=None,
+            reconciliation_states=(),
+            checkpoints=(),
+        )
         if prior_plan is None:
             return TargetProductExecutionResult(
+                execution_summary=summarize_target_product_execution(execution_plan),
+                execution_plan_payload=execution_plan_payload(execution_plan),
                 update_mode_requested=update_mode.value,
                 update_mode_effective=update_mode.value,
             )
@@ -107,13 +118,13 @@ def build_target_product_execution(
         prune_product_roots(workspace_root, pruned_reconciliation_state_refs)
         prune_product_roots(workspace_root, pruned_checkpoint_refs)
         execution_plan = TargetProductExecutionPlan(
-            signature_version=TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION,
-            update_mode_requested=update_mode.value,
-            update_mode_effective=update_mode.value,
-            claim_set_fingerprint="",
-            economic_facts=None,
-            reconciliation_states=(),
-            checkpoints=(),
+            signature_version=execution_plan.signature_version,
+            update_mode_requested=execution_plan.update_mode_requested,
+            update_mode_effective=execution_plan.update_mode_effective,
+            claim_set_fingerprint=execution_plan.claim_set_fingerprint,
+            economic_facts=execution_plan.economic_facts,
+            reconciliation_states=execution_plan.reconciliation_states,
+            checkpoints=execution_plan.checkpoints,
             pruned_reconciliation_state_refs=pruned_reconciliation_state_refs,
             pruned_checkpoint_refs=pruned_checkpoint_refs,
         )
