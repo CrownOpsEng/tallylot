@@ -191,9 +191,10 @@ Scope boundary:
 
 Exit criteria:
 
-- no forward-looking doc still routes Phase 6 through retired journal-root
-  package names or the retired journal backend-seam name
-- no forward-looking product contract still uses the older rerun heading or
+- no forward-looking doc still routes Phase 6 through the retired
+  application-side `journal` root, the retired domain-side `journal` root, or
+  the retired journal backend-seam name
+- no forward-looking product contract still uses `Replay Gates` or
   product-facing rebuild framing
 - no user-facing guide presents the rebuild validator as a normal workflow
 - `portfolio`, `performance`, `reporting`, and `investigation` are the

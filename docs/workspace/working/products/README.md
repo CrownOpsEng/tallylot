@@ -46,11 +46,3 @@ bounded planner-enabled Coinbase slice, `EconomicFacts`,
 `ReconciliationState`, and `Checkpoint` now live here as the authoritative
 downstream product directories, while current readers may still consume
 capture-scoped compatibility files derived from those kernels.
-
-Target-direction planning note:
-
-- when `Journal` lands, the journal kernel and backend-neutral detail are
-  expected under `working/products/journals/<journal_id>/`
-- the first backend-specific journal artifacts are expected under
-  `working/products/journals/<journal_id>/backends/ledger_cli/`
-- those journal paths are not part of the current runtime surface today
