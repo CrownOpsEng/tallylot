@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import shutil
 from typing import cast
 
 from tallylot.domain.balances import BalanceReference, BalanceSnapshot
@@ -103,16 +102,3 @@ def reference_rows_signature(references: tuple[BalanceReference, ...]) -> str:
         sort_keys=True,
         separators=(",", ":"),
     )
-
-
-def pruned_refs(
-    *, prior_refs: tuple[str, ...], current_refs: tuple[str, ...]
-) -> tuple[str, ...]:
-    return tuple(sorted(set(prior_refs) - set(current_refs)))
-
-
-def prune_product_roots(workspace_root: Path, refs: tuple[str, ...]) -> None:
-    for ref in refs:
-        root = (workspace_root / ref).parent
-        if root.exists():
-            shutil.rmtree(root)

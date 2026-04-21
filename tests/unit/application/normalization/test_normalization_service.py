@@ -336,6 +336,90 @@ def test_normalization_rebuild_mode_rebuilds_every_stage_but_preserves_ids_on_un
     )
 
 
+def test_normalization_auto_mode_refreshes_detail_outputs_when_prior_signatures_drift(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    from reportlab.pdfgen import canvas
+
+    pdf = canvas.Canvas(str(raw_dir / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary_path = output_dir / "normalization_summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    target_product_execution = summary["target_product_execution"]
+    target_product_execution["economic_facts"]["compatibility_signature"] = (
+        "stale-compatibility-signature"
+    )
+    for state in target_product_execution["reconciliation_states"]:
+        state["snapshot_signature"] = "stale-snapshot-signature"
+    for checkpoint in target_product_execution["checkpoints"]:
+        checkpoint["reference_signature"] = "stale-reference-signature"
+    summary_path.write_text(json.dumps(summary), encoding="utf-8")
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    rerun_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    rerun_target_product_execution = rerun_summary["target_product_execution"]
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert rerun_target_product_execution["economic_facts"]["kernel_action"] == "reused"
+    assert (
+        rerun_target_product_execution["economic_facts"]["compatibility_action"]
+        == "refreshed"
+    )
+    assert all(
+        state["kernel_action"] == "reused"
+        for state in rerun_target_product_execution["reconciliation_states"]
+    )
+    assert all(
+        state["snapshot_action"] == "refreshed"
+        for state in rerun_target_product_execution["reconciliation_states"]
+    )
+    assert all(
+        checkpoint["kernel_action"] == "reused"
+        for checkpoint in rerun_target_product_execution["checkpoints"]
+    )
+    assert all(
+        checkpoint["reference_action"] == "refreshed"
+        for checkpoint in rerun_target_product_execution["checkpoints"]
+    )
+
+
 def test_normalization_rerun_prunes_stale_balance_reference_issue_file_when_clean(
     tmp_path: Path,
 ) -> None:

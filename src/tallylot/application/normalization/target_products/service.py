@@ -18,6 +18,7 @@ from tallylot.ports.facts import FactRepositoryPort
 from tallylot.ports.reconciliation_states import ReconciliationStateRepositoryPort
 
 from ..annotations import FactAnnotationRecord
+from .cleanup import prune_product_roots, pruned_refs
 from .models import (
     TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION,
     TargetProductExecutionPlan,
@@ -27,7 +28,7 @@ from .planning import (
     load_prior_target_product_execution,
     summarize_target_product_execution,
 )
-from .payloads import execution_plan_payload, prune_product_roots, pruned_refs
+from .payloads import execution_plan_payload
 from .runtime import (
     CheckpointResolutionRequest,
     EconomicFactsResolutionRequest,
