@@ -235,10 +235,10 @@ Rules:
 - migration-era workspace paths may still group later products under a
   source-scoped directory tree, but that filesystem placement does not make
   source identity part of downstream product naming or stable-id recipes
-- during the tax-first phases, target products may expose only product-local
+- during the tax-first path, target products may expose only product-local
   derived outputs, narrow rendering outputs, or compatibility views; broader
-  derived read models and projections activate only when the roadmap trigger
-  ladder fires
+  derived read models and projections activate only when a later
+  capability-specific increment requires them
 - `EvidenceSet`, `ClaimSet`, and `EconomicFacts` kernels each persist one
   product kernel per declared partition
 - one persisted `ReconciliationState` kernel owns one continuity segment kernel
@@ -281,8 +281,8 @@ Use these paths in forward-looking docs and later implementation work:
   - `working/products/reconciliation_states/<reconciliation_state_id>/compatibility/balance_snapshots.csv`
   - `working/products/checkpoints/<checkpoint_id>/compatibility/balance_references.csv`
 - a general projections root under
-  `working/projections/<slice>/<projection_family>/...` is deferred until the
-  roadmap trigger ladder activates broader derived read models
+  `working/projections/<slice>/<projection_family>/...` is deferred until a
+  later capability-specific increment activates broader derived read models
 
 Rules:
 
@@ -297,7 +297,7 @@ Rules:
   families such as `ledger_cli/`
 - human-readable inspection outputs from bounded `ledger-cli` operations such
   as `print`, `accounts`, `balance`, and `register` are generated on demand
-  and are not durable Phase 6 artifacts
+  and are not durable backend-owned persisted artifacts
 - source-scoped or checkpoint-scoped workspace groupings remain valid only for
   current-state surfaces, compatibility views, or genuinely source-owned
   or checkpoint-owned packages

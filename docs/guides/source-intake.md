@@ -145,6 +145,18 @@ make cli ARGS='source normalize \
 
 `source normalize` has the same strict input contract as `source profile`: one
 materialized capture root with matching `capture.json` metadata.
+The default `--update-mode auto` path is the normal operator route: it reuses
+unchanged authoritative target products, recalculates affected stages
+automatically when authoritative inputs changed, refreshes required sidecars,
+rewrites capture-local mirror files from current truth, and prunes stale
+stage-owned outputs.
+
+Use `--update-mode full-update` when you need every current stage-owned detail
+or compatibility output refreshed from the current authoritative truth while
+still reusing unchanged kernels.
+
+Use `--update-mode rebuild` when you need to bypass fast-path reuse and rebuild
+the implemented target-product chain from current declared upstream truth.
 
 Then assemble the accepted capture outputs into the source dataset used by
 reconciliation:
@@ -160,8 +172,9 @@ make cli ARGS='source assemble \
 known generated files without deleting unrelated operator-owned files beside
 them.
 
-Developer rebuild validation remains available for migration proof and repo-side
-investigation, but it is not part of the normal operator intake flow.
+Developer replay validation remains available for migration proof and repo-side
+investigation, but it is developer-only proof tooling rather than part of the
+normal operator intake flow.
 
 Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the next
 step after the settled capture has been profiled and normalized.

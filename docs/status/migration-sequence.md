@@ -184,7 +184,7 @@ After those slices land, migrate readers one consumer surface at a time:
   outputs, or compatibility views until a later capability-specific increment
   requires a dedicated derived read-model slice
 
-### 4A. Accounting Boundary And Automatic Rerun Correction
+### Accounting Boundary And Automatic Rerun Correction
 
 Before the journal slice lands, keep the forward contract surfaces aligned on
 one accounting boundary and one normal rerun posture.
@@ -206,7 +206,8 @@ Rules:
   adjustments outside the owned generated surface
 - forward package and capability ownership is corrected to `accounting`
   without changing the canonical `Journal` product name
-- the journal backend seam becomes the accounting backend seam
+- the forward contract uses `accounting backend seam` as the canonical backend
+  boundary term
 - later cutover gates use deterministic rerun and parity proof rather than
   product-facing rebuild workflows or special rerun hygiene
 

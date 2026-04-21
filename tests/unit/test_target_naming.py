@@ -173,7 +173,52 @@ def _write_catalog(
                 "allowed_scopes": ["forward_target", "repo_policy"],
                 "paths": [],
                 "allowed_paths": [],
-            }
+            },
+            {
+                "rule_id": "body.accounting_boundary_term",
+                "term": "application/journal/",
+                "replacement": "application/accounting/",
+                "contexts": ["body", "inline_code", "summary"],
+                "allowed_scopes": ["forward_target", "repo_policy"],
+                "paths": [],
+                "allowed_paths": [],
+            },
+            {
+                "rule_id": "body.accounting_boundary_term",
+                "term": "domain/journal/",
+                "replacement": "domain/accounting/",
+                "contexts": ["body", "inline_code", "summary"],
+                "allowed_scopes": ["forward_target", "repo_policy"],
+                "paths": [],
+                "allowed_paths": [],
+            },
+            {
+                "rule_id": "body.accounting_boundary_term",
+                "term": "journal backend seam",
+                "replacement": "accounting backend seam",
+                "contexts": ["body", "inline_code", "summary"],
+                "allowed_scopes": ["forward_target", "repo_policy"],
+                "paths": [],
+                "allowed_paths": [],
+            },
+            {
+                "rule_id": "body.accounting_boundary_term",
+                "term": "ledger backend seam",
+                "replacement": "accounting backend seam",
+                "contexts": ["body", "inline_code", "summary"],
+                "allowed_scopes": ["forward_target", "repo_policy"],
+                "paths": [],
+                "allowed_paths": [],
+            },
+            {
+                "rule_id": "body.accounting_boundary_term",
+                "term": "first ledger backend seam",
+                "replacement": "bounded accounting backend seam",
+                "contexts": ["body", "inline_code", "summary"],
+                "allowed_scopes": ["forward_target", "repo_policy"],
+                "paths": [],
+                "allowed_paths": [],
+            },
         ],
         "exceptions": [
             {
@@ -734,6 +779,27 @@ def test_audit_reports_capitalized_retired_alias_in_summary(tmp_path: Path) -> N
         findings = audit_target_naming(paths=("docs/example.md",))
 
     assert [finding.rule_id for finding in findings] == ["body.compatibility_view_term"]
+
+
+@pytest.mark.parametrize(
+    ("term", "replacement"),
+    (
+        ("application/journal/", "application/accounting/"),
+        ("domain/journal/", "domain/accounting/"),
+        ("journal backend seam", "accounting backend seam"),
+        ("ledger backend seam", "accounting backend seam"),
+        ("first ledger backend seam", "bounded accounting backend seam"),
+    ),
+)
+def test_audit_reports_retired_accounting_boundary_aliases(
+    tmp_path: Path, term: str, replacement: str
+) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        body=f"This page still uses {term} instead of {replacement}.",
+    )
+
+    assert "body.accounting_boundary_term" in [finding.rule_id for finding in findings]
 
 
 def test_audit_reports_transient_process_term_in_summary(tmp_path: Path) -> None:
@@ -1402,8 +1468,23 @@ def test_real_repo_catalog_loads_core_family_and_identifier_data() -> None:
     )
     assert retired_aliases["operator view"] == "derived view"
     assert retired_aliases["operator views"] == "derived views"
+    assert retired_aliases["application/journal/"] == "application/accounting/"
+    assert retired_aliases["domain/journal/"] == "domain/accounting/"
+    assert retired_aliases["journal backend seam"] == "accounting backend seam"
+    assert retired_aliases["ledger backend seam"] == "accounting backend seam"
+    assert (
+        retired_aliases["first ledger backend seam"]
+        == "bounded accounting backend seam"
+    )
     assert "implementation plan" in banned_terms
     assert "step 1" in banned_terms
+    for reserved_path in (
+        "application/reporting/",
+        "application/portfolio/",
+        "application/performance/",
+        "application/investigation/",
+    ):
+        assert reserved_path in catalog.canonical_families.package_paths
     assert "tools/target_naming.py" in catalog.tooling_paths
     assert "tests/unit/test_target_naming_parser.py" in catalog.tooling_paths
 

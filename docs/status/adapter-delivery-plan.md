@@ -8,7 +8,6 @@ status: active
 naming_scope: forward_target
 nav_order: 30
 related:
-  - ROADMAP.md
   - docs/guides/write-an-adapter.md
   - docs/concepts/unified-adapter-architecture.md
   - docs/concepts/bridge-to-target-mapping.md

@@ -15,7 +15,6 @@ related:
   - docs/reference/economics-reconciliation-checkpoint-contract.md
   - docs/reference/journal-contract.md
   - docs/status/migration-sequence.md
-  - ROADMAP.md
 ---
 
 Use this page when you need the migration rule from the live bridge into the

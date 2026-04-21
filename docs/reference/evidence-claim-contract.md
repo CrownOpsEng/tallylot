@@ -13,7 +13,6 @@ related:
   - docs/concepts/domain-ontology.md
   - docs/concepts/gaps-and-reviews.md
   - docs/status/adapter-delivery-plan.md
-  - ROADMAP.md
 ---
 
 Use this page when implementing or reviewing the bounded evidence-and-claim contract.
@@ -330,6 +329,11 @@ The slice is rerun-safe only when repeated runs on unchanged evidence preserve:
 - identical `translation_input_plan.json` content
 - identical `EconomicActivityDraft` content for evidence in this slice
 - identical `SourceTranslationBatch` content for evidence in this slice
+
+Normal operator reruns must keep those guarantees automatic and transparent:
+changed authoritative inputs recalculate the affected stages without extra
+operator input, while unchanged authoritative partitions skip unnecessary recalculation
+and preserve ids, ordering, payloads, refs, and fingerprints.
 
 Rerun checks must also prove that incidental input ordering changes do not
 change evidence selection, claim order, claim-bundle order,

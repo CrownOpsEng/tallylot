@@ -9,6 +9,7 @@ from repo_support.docs_audit.model import DocsAuditFinding, DocsAuditRule
 from repo_support.docs_audit.rules import forward_contracts_matrix
 from repo_support.docs_audit.rules import forward_contracts_support
 from repo_support.docs_audit.rules import policy_alignment
+from repo_support.docs_audit.rules import runtime
 from repo_support.docs_audit.reporting import report_payload
 from tools import audit_docs as audit_docs_tool
 
@@ -285,6 +286,126 @@ def test_durable_doc_policy_rule_rejects_ephemeral_delivery_labels(
             (
                 "docs/reference/evidence-claim-contract.md uses forbidden "
                 f"roadmap/phase delivery labels: {phase_word_label}"
+            ),
+            None,
+        ),
+    )
+
+
+def test_durable_doc_policy_rule_rejects_forbidden_planning_phrases(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payloads = {
+        "docs/reference/journal-contract.md": "These are not durable Phase 6 artifacts.",
+        "docs/concepts/domain-ontology.md": "The roadmap trigger ladder decides this.",
+        "docs/status/current-state.md": "Use this in the next architecture phase.",
+    }
+
+    monkeypatch.setattr(
+        policy_alignment,
+        "_durable_non_planning_surface_texts",
+        lambda: tuple(payloads.items()),
+    )
+
+    findings = next(
+        rule.run()
+        for rule in policy_alignment.POLICY_ALIGNMENT_RULES
+        if rule.rule_id
+        == "policy_alignment.durable_non_planning_surfaces_do_not_use_forbidden_planning_phrases"
+    )
+
+    assert findings == (
+        DocsAuditFinding(
+            "policy_alignment.durable_non_planning_surfaces_do_not_use_forbidden_planning_phrases",
+            "docs/reference/journal-contract.md",
+            "docs/reference/journal-contract.md uses forbidden planning phrase: Phase 6 artifacts",
+            None,
+        ),
+        DocsAuditFinding(
+            "policy_alignment.durable_non_planning_surfaces_do_not_use_forbidden_planning_phrases",
+            "docs/concepts/domain-ontology.md",
+            "docs/concepts/domain-ontology.md uses forbidden planning phrase: roadmap trigger ladder",
+            None,
+        ),
+        DocsAuditFinding(
+            "policy_alignment.durable_non_planning_surfaces_do_not_use_forbidden_planning_phrases",
+            "docs/status/current-state.md",
+            "docs/status/current-state.md uses forbidden planning phrase: next architecture phase",
+            None,
+        ),
+    )
+
+
+def test_runtime_rule_requires_fast_path_phrasing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs = {
+        "status/current-state.md": "\n".join(
+            (
+                "Automatic recalculation is the default normalization posture",
+                "`source normalize --update-mode full-update`",
+                "`source normalize --update-mode rebuild`",
+            )
+        ),
+        "reference/evidence-claim-contract.md": "automatic and transparent only",
+        "reference/economics-reconciliation-checkpoint-contract.md": "\n".join(
+            ("`full-update`", "`rebuild`", "skip recalculation")
+        ),
+        "guides/source-intake.md": "\n".join(
+            ("--update-mode auto", "--update-mode full-update", "--update-mode rebuild")
+        ),
+        "guides/normalize-screen-stage.md": "\n".join(
+            ("--update-mode auto", "--update-mode full-update", "--update-mode rebuild")
+        ),
+    }
+
+    def fake_docs_text(path: str) -> str:
+        return docs[path]
+
+    monkeypatch.setattr(runtime, "docs_text", fake_docs_text)
+
+    findings = next(
+        rule.run()
+        for rule in runtime.RUNTIME_RULES
+        if rule.rule_id == "runtime.owner_docs_pin_automatic_fast_path_reruns"
+    )
+
+    assert findings == (
+        DocsAuditFinding(
+            "runtime.owner_docs_pin_automatic_fast_path_reruns",
+            "docs/status/current-state.md",
+            "reference/evidence-claim-contract.md is missing fast-path rerun contract text",
+            None,
+        ),
+    )
+
+
+def test_runtime_rule_rejects_replay_as_normal_operator_step(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs = {
+        "guides/source-intake.md": "Replay validation is just another operator step.",
+        "guides/operator-quickstart.md": "Run validate-workspace-replay now.",
+        "guides/normalize-screen-stage.md": "Normal path.",
+    }
+
+    def fake_docs_text(path: str) -> str:
+        return docs[path]
+
+    monkeypatch.setattr(runtime, "docs_text", fake_docs_text)
+
+    findings = next(
+        rule.run()
+        for rule in runtime.RUNTIME_RULES
+        if rule.rule_id == "runtime.operator_docs_keep_workspace_replay_developer_only"
+    )
+
+    assert findings == (
+        DocsAuditFinding(
+            "runtime.operator_docs_keep_workspace_replay_developer_only",
+            "docs/guides/source-intake.md",
+            (
+                "source-intake or operator docs present replay validation as a normal operator step"
             ),
             None,
         ),

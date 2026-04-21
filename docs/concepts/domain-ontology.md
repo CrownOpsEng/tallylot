@@ -511,8 +511,8 @@ package ownership yet:
 
 Rules:
 
-- these families are reserved in prose only until the roadmap trigger ladder
-  requires one of them
+- these families are reserved in prose only until a later
+  capability-specific increment requires one of them
 - do not introduce a generic read-side sink while waiting for a trigger
 - do not pre-create all reserved families when only one capability is needed
 - semantic read models belong to the owning capability

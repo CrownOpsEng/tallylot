@@ -62,9 +62,9 @@ Shared rules:
 - later stages may add stage-owned sidecars and active-slice derived outputs,
   but must not silently rewrite upstream product meaning to make their own
   outputs look tidy
-- broader derived read models and projections activate only when the roadmap
-  trigger ladder requires them; they are not first-class target product
-  families during the tax-first phases
+- broader derived read models and projections activate only when a later
+  capability-specific increment requires them; they are not first-class target
+  product families during the tax-first path
 - if a stage cannot support a required decision, it emits explicit blockers,
   unresolved records, or deferred records rather than inventing a fallback
 - deterministic rerun and parity gates operate on kernels first and inspect
@@ -1530,7 +1530,7 @@ Rules:
 
 - this file is a product-local derived output, not kernel content, shared
   assessment output, or a compatibility sidecar
-- `group_kind` is fixed to `tax_output_kind` during the tax-first phases
+- `group_kind` is fixed to `tax_output_kind` during the tax-first path
 - `group_key` uses the `TaxOutputRecord.kind` vocabulary:
   `policy_summary`, `supporting_schedule`, and `filing_form`
 - `status` is derived-only and non-editable; it is computed from
@@ -1541,7 +1541,7 @@ Rules:
 - allowed readers are filing-critical tax flows and narrow rendering flows only
 - a second grouped non-compatibility consumer, a new grouping dimension beyond
   `tax_output_kind`, or durable grouped persistence outside this product-local
-  surface fires the roadmap trigger ladder before implementation
+  surface requires a later capability-specific increment before implementation
 
 Scope fence:
 

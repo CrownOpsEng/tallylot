@@ -42,7 +42,8 @@ product names `EvidenceSet`, `ClaimSet`, `EconomicFacts`,
 - The target pipeline products and stage contracts live in
   `docs/concepts/pipeline-stage-contracts.md`; system-level trust gates and
   rollout alignment live in
-  `docs/concepts/reconciliation-tax-architecture.md` and `ROADMAP.md`.
+  `docs/concepts/reconciliation-tax-architecture.md` and
+  `docs/status/migration-sequence.md`.
 - The live `src/tallylot/` package layout remains current-state truth.
   Forward-looking package ownership lives in
   `docs/concepts/domain-ontology.md` and `docs/standards/engineering.md`.
@@ -91,6 +92,18 @@ The repo currently ships typed replacements for the current workflow capabilitie
   therefore implemented authorities for the bounded planner-enabled Coinbase
   slice, while current readers still consume the mirrored compatibility
   `facts.csv`, `balance_snapshots.csv`, and `balance_references.csv` outputs
+- `source normalize` now defaults to automatic target-product reruns:
+  unchanged authoritative kernels are reused, changed authoritative inputs
+  recalculate affected target products automatically, stale stage-owned
+  outputs are pruned, and capture-local mirror files are rewritten from the
+  current authoritative truth
+- `source normalize --update-mode full-update` reuses unchanged authoritative
+  kernels while refreshing all current stage-owned compatibility and detail
+  outputs
+- `source normalize --update-mode rebuild` bypasses fast-path reuse, rebuilds
+  the implemented target-product chain from declared upstream truth, refreshes
+  all current stage-owned detail, and still preserves deterministic ids and
+  fingerprints on unchanged inputs
 - source assembly via `source assemble`, producing reconciliation-ready source
   datasets under `working/normalized/sources/<source>/` and rewrites its owned
   generated artifact set on rerun
@@ -127,9 +140,9 @@ The repo currently ships typed replacements for the current workflow capabilitie
   `make validate-workspace-replay`
   with optional expected-difference fixtures limited to issue and review count
   drift
-- that tooling is for developer rebuild validation and migration proof only;
-  normal user workflows are intended to stay rerun-safe without a separate
-  rebuild-validation step
+- that tooling is developer-only proof tooling for rerun parity and migration
+  validation; it is not a numbered operator workflow step and normal user
+  workflows stay rerun-safe without a separate replay-validation step
 
 ## Current Hard Rules
 
@@ -137,6 +150,15 @@ The repo currently ships typed replacements for the current workflow capabilitie
 - Untouched source originals stay under `evidence/raw/source/`.
 - Normal user workflows are intended to stay rerun-safe and keep the fast path
   on ordinary commands rather than on manual rebuild validation.
+- Automatic recalculation is the default normalization posture: changed
+  authoritative inputs rerun affected stages or partitions without extra
+  operator input, while unchanged authoritative partitions skip
+  recalculation.
+- `source normalize --update-mode full-update` refreshes stage-owned detail
+  from authoritative truth without rebuilding unchanged kernels.
+- `source normalize --update-mode rebuild` bypasses fast-path reuse for the
+  implemented target-product chain while preserving deterministic unchanged
+  outputs.
 - `source profile` and `source normalize` accept only one materialized raw
   capture root under `evidence/raw/source/<source>/<capture_label>/` with
   matching `capture.json` metadata. They reject source roots, arbitrary

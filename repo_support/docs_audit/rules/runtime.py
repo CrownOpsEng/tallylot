@@ -140,6 +140,70 @@ RUNTIME_RULES = (
         ],
     ),
     build_rule(
+        "runtime.owner_docs_pin_automatic_fast_path_reruns",
+        "docs/status/current-state.md",
+        lambda: [
+            (_ for _ in ()).throw(
+                AssertionError(f"{path} is missing fast-path rerun contract text")
+            )
+            for path, needles in (
+                (
+                    "status/current-state.md",
+                    (
+                        "Automatic recalculation is the default normalization posture",
+                        "`source normalize --update-mode full-update`",
+                        "`source normalize --update-mode rebuild`",
+                    ),
+                ),
+                (
+                    "reference/evidence-claim-contract.md",
+                    ("automatic and transparent", "skip unnecessary recalculation"),
+                ),
+                (
+                    "reference/economics-reconciliation-checkpoint-contract.md",
+                    ("`full-update`", "`rebuild`", "skip recalculation"),
+                ),
+                (
+                    "guides/source-intake.md",
+                    (
+                        "--update-mode auto",
+                        "--update-mode full-update",
+                        "--update-mode rebuild",
+                    ),
+                ),
+                (
+                    "guides/normalize-screen-stage.md",
+                    (
+                        "--update-mode auto",
+                        "--update-mode full-update",
+                        "--update-mode rebuild",
+                    ),
+                ),
+            )
+            if any(needle not in docs_text(path) for needle in needles)
+        ],
+    ),
+    build_rule(
+        "runtime.operator_docs_keep_workspace_replay_developer_only",
+        "docs/guides/source-intake.md",
+        lambda: [
+            (_ for _ in ()).throw(
+                AssertionError(
+                    "source-intake or operator docs present replay validation as a normal operator step"
+                )
+            )
+            for condition in (
+                "developer-only proof tooling"
+                not in docs_text("guides/source-intake.md"),
+                "validate-workspace-replay"
+                in docs_text("guides/operator-quickstart.md"),
+                "validate-workspace-replay"
+                in docs_text("guides/normalize-screen-stage.md"),
+            )
+            if condition
+        ],
+    ),
+    build_rule(
         "runtime.docs_pin_workspace_replay_expected_difference_limits",
         "docs/status/current-state.md",
         lambda: [

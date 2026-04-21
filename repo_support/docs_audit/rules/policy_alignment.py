@@ -17,10 +17,25 @@ _EPHEMERAL_DELIVERY_LABEL_PATTERN = re.compile(
     r"\b(?:roadmap|phase(?:[ _-]?(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)))\b",
     re.IGNORECASE,
 )
+_FORBIDDEN_DURABLE_PHRASES = (
+    "Phase 6 artifacts",
+    "roadmap trigger ladder",
+    "next architecture phase",
+)
 _DURABLE_NON_PLANNING_SURFACE_PATHS = (
     "CHANGELOG.md",
     "docs/concepts/architecture-overview.md",
+    "docs/concepts/bridge-to-target-mapping.md",
+    "docs/concepts/domain-ontology.md",
+    "docs/concepts/pipeline-stage-contracts.md",
+    "docs/concepts/reconciliation-tax-architecture.md",
     "docs/reference/evidence-claim-contract.md",
+    "docs/reference/economics-reconciliation-checkpoint-contract.md",
+    "docs/reference/journal-contract.md",
+    "docs/reference/target-persistence-reference.md",
+    "docs/guides/operator-quickstart.md",
+    "docs/guides/source-intake.md",
+    "docs/guides/normalize-screen-stage.md",
     "docs/status/current-state.md",
     "docs/status/migration-sequence.md",
     "docs/workspace/working/products/README.md",
@@ -59,6 +74,26 @@ def _durable_non_planning_surface_findings() -> tuple[DocsAuditFinding, ...]:
     return tuple(findings)
 
 
+def _durable_non_planning_surface_phrase_findings() -> tuple[DocsAuditFinding, ...]:
+    findings: list[DocsAuditFinding] = []
+    rule_id = (
+        "policy_alignment."
+        "durable_non_planning_surfaces_do_not_use_forbidden_planning_phrases"
+    )
+    for path, text in _durable_non_planning_surface_texts():
+        for phrase in _FORBIDDEN_DURABLE_PHRASES:
+            if phrase not in _masked_ephemeral_delivery_text(text):
+                continue
+            findings.append(
+                finding(
+                    rule_id,
+                    path,
+                    f"{path} uses forbidden planning phrase: {phrase}",
+                )
+            )
+    return tuple(findings)
+
+
 POLICY_ALIGNMENT_RULES = (
     DocsAuditRule(
         rule_id=(
@@ -66,6 +101,13 @@ POLICY_ALIGNMENT_RULES = (
             "durable_non_planning_surfaces_do_not_use_ephemeral_delivery_labels"
         ),
         run=_durable_non_planning_surface_findings,
+    ),
+    DocsAuditRule(
+        rule_id=(
+            "policy_alignment."
+            "durable_non_planning_surfaces_do_not_use_forbidden_planning_phrases"
+        ),
+        run=_durable_non_planning_surface_phrase_findings,
     ),
     build_rule(
         "policy_alignment.docs_do_not_reference_retired_service_or_model_buckets",

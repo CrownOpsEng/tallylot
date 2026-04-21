@@ -13,7 +13,6 @@ related:
   - docs/concepts/domain-ontology.md
   - docs/concepts/reconciliation-tax-architecture.md
   - docs/status/migration-sequence.md
-  - ROADMAP.md
 ---
 
 Use this page when implementing or reviewing the bounded economics,
@@ -329,6 +328,13 @@ The slice is rerun-safe only when repeated runs on unchanged evidence preserve:
   evidence in this slice
 - identical balance inspect/check/summarize output for supported slice subjects
 - identical `cointracking_csv` output for supported bridge facts
+
+Normal operator reruns must stay automatic, transparent, and bounded:
+changed authoritative inputs recalculate the affected downstream stages plus
+their true dependents, unchanged authoritative partitions skip recalculation,
+`full-update` refreshes stage-owned detail from authoritative truth, and
+`rebuild` bypasses fast-path reuse while preserving deterministic ids and
+fingerprints on unchanged inputs.
 
 Rerun checks must also prove that incidental input ordering changes do not
 change event ids, leg ids, continuity segment ids, balance target ids,
