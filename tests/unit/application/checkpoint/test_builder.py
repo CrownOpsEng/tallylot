@@ -7,6 +7,7 @@ from tallylot.domain.assertion import QuantityValue
 from tallylot.domain.checkpoint import (
     CheckpointAssertionContinuityKind,
     CheckpointAssertionTrustLevel,
+    checkpoint_fingerprint,
 )
 from tallylot.domain.reconciliation import (
     BalanceTargetKind,
@@ -150,6 +151,81 @@ def test_builder_deduplicates_reconciliation_state_refs_per_checkpoint() -> None
     checkpoints = build_checkpoints(reconciliation_states=(state,))
 
     assert checkpoints[0].reconciliation_state_refs == ("state-1",)
+
+
+def test_build_checkpoints_replay_with_unchanged_states_preserves_payload_and_fingerprint() -> (
+    None
+):
+    states = (_ready_state(), _ready_state(state_id="state-2"))
+
+    first = build_checkpoints(reconciliation_states=states)
+    second = build_checkpoints(reconciliation_states=states)
+
+    assert tuple(item.checkpoint_id for item in first) == tuple(
+        item.checkpoint_id for item in second
+    )
+    assert tuple(item.to_payload() for item in first) == tuple(
+        item.to_payload() for item in second
+    )
+    assert tuple(checkpoint_fingerprint(item) for item in first) == tuple(
+        checkpoint_fingerprint(item) for item in second
+    )
+    assert tuple(
+        assertion.assertion_id
+        for checkpoint in first
+        for assertion in checkpoint.checkpoint_assertion_records
+    ) == tuple(
+        assertion.assertion_id
+        for checkpoint in second
+        for assertion in checkpoint.checkpoint_assertion_records
+    )
+
+
+def test_build_checkpoints_order_only_changes_do_not_change_checkpoint_ids_assertion_ids_or_payload() -> (
+    None
+):
+    first_states = (
+        _ready_state(),
+        _ready_state(
+            state_id="state-2",
+            subject_ref=(
+                "position",
+                (
+                    ("beneficial_owner:filing",),
+                    ("location:coinbase",),
+                    ("instrument:eth",),
+                    None,
+                    "held_position",
+                ),
+            ),
+        ),
+    )
+    second_states = tuple(reversed(first_states))
+
+    first = build_checkpoints(reconciliation_states=first_states)
+    second = build_checkpoints(reconciliation_states=second_states)
+
+    assert tuple(item.checkpoint_id for item in first) == tuple(
+        item.checkpoint_id for item in second
+    )
+    assert tuple(item.reconciliation_state_refs for item in first) == tuple(
+        item.reconciliation_state_refs for item in second
+    )
+    assert tuple(item.to_payload() for item in first) == tuple(
+        item.to_payload() for item in second
+    )
+    assert tuple(checkpoint_fingerprint(item) for item in first) == tuple(
+        checkpoint_fingerprint(item) for item in second
+    )
+    assert tuple(
+        assertion.assertion_id
+        for checkpoint in first
+        for assertion in checkpoint.checkpoint_assertion_records
+    ) == tuple(
+        assertion.assertion_id
+        for checkpoint in second
+        for assertion in checkpoint.checkpoint_assertion_records
+    )
 
 
 def _ready_state(

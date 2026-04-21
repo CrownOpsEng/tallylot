@@ -33,6 +33,7 @@ from tallylot.domain.evidence import (
     EvidenceSet,
 )
 from tallylot.domain.reconciliation import CheckpointProposalStatus, ComparisonOutcome
+from tallylot.domain.reconciliation import reconciliation_state_fingerprint
 from tallylot.domain.temporal import TemporalPrecision
 
 from tallylot.application.reconciliation import build_reconciliation_states
@@ -136,6 +137,121 @@ def test_builder_emits_partial_segment_when_only_economic_activity_exists() -> N
     assert states[0].continuity_segment_records[0].status.value == "partial"
     assert states[0].balance_target_records == ()
     assert states[0].checkpoint_proposal_records == ()
+
+
+def test_build_reconciliation_states_replay_with_unchanged_inputs_preserves_payload_and_fingerprint() -> (
+    None
+):
+    claim_set, evidence_set, economic_facts = _matched_fixture()
+
+    first = build_reconciliation_states(
+        economic_facts=economic_facts,
+        claim_set=claim_set,
+        evidence_set=evidence_set,
+    )
+    second = build_reconciliation_states(
+        economic_facts=economic_facts,
+        claim_set=claim_set,
+        evidence_set=evidence_set,
+    )
+
+    assert len(first) == len(second)
+    assert tuple(state.reconciliation_state_id for state in first) == tuple(
+        state.reconciliation_state_id for state in second
+    )
+    assert tuple(state.to_payload() for state in first) == tuple(
+        state.to_payload() for state in second
+    )
+    assert tuple(reconciliation_state_fingerprint(state) for state in first) == tuple(
+        reconciliation_state_fingerprint(state) for state in second
+    )
+    assert tuple(
+        state.continuity_segment_records[0].segment_id for state in first
+    ) == tuple(state.continuity_segment_records[0].segment_id for state in second)
+    assert tuple(
+        target.target_id for state in first for target in state.balance_target_records
+    ) == tuple(
+        target.target_id for state in second for target in state.balance_target_records
+    )
+    assert tuple(
+        proposal.proposal_id
+        for state in first
+        for proposal in state.checkpoint_proposal_records
+    ) == tuple(
+        proposal.proposal_id
+        for state in second
+        for proposal in state.checkpoint_proposal_records
+    )
+
+
+def test_build_reconciliation_states_order_only_changes_do_not_change_ids_payload_or_fingerprint() -> (
+    None
+):
+    claim_set, evidence_set, economic_facts = _matched_fixture()
+    reordered_claim_set = ClaimSet(
+        claim_set_id=claim_set.claim_set_id,
+        evidence_set_ref=claim_set.evidence_set_ref,
+        emitter_id=claim_set.emitter_id,
+        claim_records=tuple(reversed(claim_set.claim_records)),
+        claim_bundle_records=tuple(reversed(claim_set.claim_bundle_records)),
+        claim_bundle_decision_records=tuple(
+            reversed(claim_set.claim_bundle_decision_records)
+        ),
+    )
+    reordered_evidence_set = EvidenceSet(
+        evidence_set_id=evidence_set.evidence_set_id,
+        selection_fingerprint=evidence_set.selection_fingerprint,
+        capture_manifest_fingerprint=evidence_set.capture_manifest_fingerprint,
+        evidence_selection_records=tuple(
+            reversed(evidence_set.evidence_selection_records)
+        ),
+        evidence_member_records=tuple(reversed(evidence_set.evidence_member_records)),
+        evidence_observation_records=tuple(
+            reversed(evidence_set.evidence_observation_records)
+        ),
+    )
+    reordered_economic_facts = EconomicFacts(
+        economic_facts_id=economic_facts.economic_facts_id,
+        claim_set_refs=economic_facts.claim_set_refs,
+        economic_event_records=tuple(reversed(economic_facts.economic_event_records)),
+        economic_leg_records=tuple(reversed(economic_facts.economic_leg_records)),
+        valuation_records=economic_facts.valuation_records,
+    )
+
+    first = build_reconciliation_states(
+        economic_facts=economic_facts,
+        claim_set=claim_set,
+        evidence_set=evidence_set,
+    )
+    second = build_reconciliation_states(
+        economic_facts=reordered_economic_facts,
+        claim_set=reordered_claim_set,
+        evidence_set=reordered_evidence_set,
+    )
+
+    assert tuple(state.reconciliation_state_id for state in first) == tuple(
+        state.reconciliation_state_id for state in second
+    )
+    assert tuple(state.to_payload() for state in first) == tuple(
+        state.to_payload() for state in second
+    )
+    assert tuple(reconciliation_state_fingerprint(state) for state in first) == tuple(
+        reconciliation_state_fingerprint(state) for state in second
+    )
+    assert tuple(
+        target.target_id for state in first for target in state.balance_target_records
+    ) == tuple(
+        target.target_id for state in second for target in state.balance_target_records
+    )
+    assert tuple(
+        proposal.proposal_id
+        for state in first
+        for proposal in state.checkpoint_proposal_records
+    ) == tuple(
+        proposal.proposal_id
+        for state in second
+        for proposal in state.checkpoint_proposal_records
+    )
 
 
 def test_builder_ignores_unaccepted_balance_claim_bundles() -> None:

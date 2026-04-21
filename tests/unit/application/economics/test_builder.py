@@ -28,7 +28,12 @@ from tallylot.domain.claim import (
     ClaimRecordStatus,
     ClaimSet,
 )
-from tallylot.domain.economics import EconomicEventKind, EconomicLegRole, LifecycleEvent
+from tallylot.domain.economics import (
+    EconomicEventKind,
+    EconomicLegRole,
+    LifecycleEvent,
+    economic_facts_fingerprint,
+)
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
@@ -173,6 +178,54 @@ def test_builder_skips_balance_only_claim_bundles() -> None:
     assert economic_facts.economic_event_records == ()
     assert economic_facts.economic_leg_records == ()
     assert economic_facts.valuation_records == ()
+
+
+def test_build_economic_facts_replay_with_unchanged_claim_set_preserves_payload_and_fingerprint() -> (
+    None
+):
+    claim_set = _activity_claim_set(activity_label="buy")
+
+    first = build_economic_facts(claim_set=claim_set)
+    second = build_economic_facts(claim_set=claim_set)
+
+    assert first.economic_facts_id == second.economic_facts_id
+    assert first.to_payload() == second.to_payload()
+    assert economic_facts_fingerprint(first) == economic_facts_fingerprint(second)
+    assert tuple(record.event_id for record in first.economic_event_records) == tuple(
+        record.event_id for record in second.economic_event_records
+    )
+    assert tuple(record.leg_id for record in first.economic_leg_records) == tuple(
+        record.leg_id for record in second.economic_leg_records
+    )
+
+
+def test_build_economic_facts_order_only_changes_do_not_change_ids_payload_or_fingerprint() -> (
+    None
+):
+    first_claim_set = _multi_leg_claim_set()
+    second_claim_set = ClaimSet(
+        claim_set_id=first_claim_set.claim_set_id,
+        evidence_set_ref=first_claim_set.evidence_set_ref,
+        emitter_id=first_claim_set.emitter_id,
+        claim_records=tuple(reversed(first_claim_set.claim_records)),
+        claim_bundle_records=tuple(reversed(first_claim_set.claim_bundle_records)),
+        claim_bundle_decision_records=tuple(
+            reversed(first_claim_set.claim_bundle_decision_records)
+        ),
+    )
+
+    first = build_economic_facts(claim_set=first_claim_set)
+    second = build_economic_facts(claim_set=second_claim_set)
+
+    assert first.economic_facts_id == second.economic_facts_id
+    assert first.to_payload() == second.to_payload()
+    assert economic_facts_fingerprint(first) == economic_facts_fingerprint(second)
+    assert tuple(record.event_id for record in first.economic_event_records) == tuple(
+        record.event_id for record in second.economic_event_records
+    )
+    assert tuple(record.leg_id for record in first.economic_leg_records) == tuple(
+        record.leg_id for record in second.economic_leg_records
+    )
 
 
 def test_builder_fails_closed_for_unsupported_activity_shape() -> None:
@@ -324,6 +377,66 @@ def _activity_claim_set(*, activity_label: str) -> ClaimSet:
                 blocking_gap_refs=(),
             ),
         ),
+    )
+
+
+def _multi_leg_claim_set() -> ClaimSet:
+    base = _activity_claim_set(activity_label="buy")
+    activity_claim = next(
+        claim for claim in base.claim_records if claim.kind is ClaimKind.ACTIVITY
+    )
+    updated_activity = ClaimRecord(
+        claim_set_id=activity_claim.claim_set_id,
+        scope_id=activity_claim.scope_id,
+        bundle_id=activity_claim.bundle_id,
+        claim_id=activity_claim.claim_id,
+        kind=activity_claim.kind,
+        status=activity_claim.status,
+        key=activity_claim.key,
+        member_refs=activity_claim.member_refs,
+        observation_refs=activity_claim.observation_refs,
+        effective_at=activity_claim.effective_at,
+        precision=activity_claim.precision,
+        provenance_refs=activity_claim.provenance_refs,
+        activity_label=activity_claim.activity_label,
+        location_claim_ref=activity_claim.location_claim_ref,
+        leg_specs=(
+            ClaimLegSpec(
+                slot=2,
+                role="fee",
+                quantity=Decimal("-0.01"),
+                instrument_claim_refs=("claim-instrument",),
+                location_claim_ref="claim-location",
+                subtype="",
+            ),
+            ClaimLegSpec(
+                slot=0,
+                role="asset_in",
+                quantity=Decimal("1.25"),
+                instrument_claim_refs=("claim-instrument",),
+                location_claim_ref="claim-location",
+                subtype="",
+            ),
+            ClaimLegSpec(
+                slot=1,
+                role="cash_out",
+                quantity=Decimal("-10.00"),
+                instrument_claim_refs=("claim-instrument",),
+                location_claim_ref="claim-location",
+                subtype="",
+            ),
+        ),
+    )
+    return ClaimSet(
+        claim_set_id=base.claim_set_id,
+        evidence_set_ref=base.evidence_set_ref,
+        emitter_id=base.emitter_id,
+        claim_records=tuple(
+            updated_activity if claim.claim_id == updated_activity.claim_id else claim
+            for claim in base.claim_records
+        ),
+        claim_bundle_records=base.claim_bundle_records,
+        claim_bundle_decision_records=base.claim_bundle_decision_records,
     )
 
 
