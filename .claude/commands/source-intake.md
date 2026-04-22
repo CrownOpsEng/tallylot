@@ -16,12 +16,29 @@ Use this route for a full typed intake pass:
     reused
 11. use `--update-mode rebuild` when you need to bypass fast-path reuse and
     rebuild the implemented target-product chain from declared upstream truth
-12. review `facts.csv`, `exceptions.csv`, `normalization_reviews.csv`, and `normalization_summary.json`
-13. confirm `normalization_summary.json` records automatic target-product execution details and the effective update mode
-14. `checkpoint rebuild-location-inventory` when normalization emitted
-    per-source location inventory rows
-15. `output render file` when the round needs an external output artifact such
+12. `source assemble` before reconciliation or downstream balance work; the
+    assembled source dataset under `working/normalized/sources/<source>/` is
+    the operator-facing handoff surface after normalization
+13. review `facts.csv`, `exceptions.csv`, `normalization_reviews.csv`, and `normalization_summary.json`
+14. confirm `normalization_summary.json` records automatic target-product execution details and the effective update mode
+15. `checkpoint extract-pdf-balances` when supported statement PDFs need the
+    standalone statement parser output that shares normalization's statement
+    extraction path
+16. `checkpoint scaffold-balance-submission` and
+    `checkpoint submit-balances` when normalization did not already emit the
+    balance outputs needed for the assembled source root
+17. `reconciliation balances check` once the assembled source root contains
+    the balance outputs needed for a deterministic source-level check
+18. `reconciliation balances inspect`, `reconciliation balances check`, and
+    `reconciliation balances summarize` when the task needs a multi-source
+    balance answer instead of a source-local one
+19. `output render file` when the round needs an external output artifact such
     as `cointracking_candidate.csv`
+20. continue with `.claude/commands/round-verification.md` once a rendered
+    candidate must move through oracle screening, staging, or round-close
+    verification
+21. `checkpoint rebuild-location-inventory` when normalization emitted
+    per-source location inventory rows
 
 Developer-only proof tooling:
 
@@ -31,4 +48,4 @@ Developer-only proof tooling:
 
 Use `docs/guides/operator-quickstart.md` for the short operator route,
 `docs/guides/source-intake.md` for the detailed intake procedure, and
-`docs/guides/normalize-screen-stage.md` for the next stage after profiling.
+`docs/guides/normalize-screen-stage.md` for the next stage after normalization.

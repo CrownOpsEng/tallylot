@@ -1,7 +1,7 @@
 interface:
   display_name: "Source Intake"
-  short_description: "Run tallylot's typed source intake path without ad hoc shell choreography."
-  default_prompt: "Use $source-intake-operations to run tallylot's typed intake and normalization route."
+  short_description: "Run tallylot's typed source intake path and hand off cleanly into normalization follow-through."
+  default_prompt: "Use $source-intake-operations to run tallylot's typed intake, normalization, and runtime follow-through route."
 
 policy:
   allow_implicit_invocation: true

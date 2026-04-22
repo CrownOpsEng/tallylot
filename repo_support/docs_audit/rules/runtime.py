@@ -4,6 +4,7 @@ from tallylot.domain.captures import provenance_locator_header
 from tallylot.domain.transactions import ProjectionHint
 from tallylot.infrastructure.workspace.layout import SEED_FILES
 from tallylot.ports.source_profiles import PROFILE_INVENTORY_HEADER
+from repo_support.paths import repo_root
 
 from ._common import build_rule
 from ..helpers import docs_path, docs_text
@@ -209,6 +210,75 @@ RUNTIME_RULES = (
                 in docs_text("guides/normalize-screen-stage.md"),
             )
             if condition
+        ],
+    ),
+    build_rule(
+        "runtime.source_intake_agent_routes_match_operator_follow_through",
+        ".agents/skills/source-intake-operations/SKILL.md",
+        lambda: [
+            (_ for _ in ()).throw(
+                AssertionError(f"{path} is missing agent-surface command {needle!r}")
+            )
+            for path, needles in (
+                (
+                    repo_root()
+                    / ".agents"
+                    / "skills"
+                    / "source-intake-operations"
+                    / "SKILL.md",
+                    (
+                        "source assemble",
+                        "checkpoint extract-pdf-balances",
+                        "checkpoint scaffold-balance-submission",
+                        "checkpoint submit-balances",
+                        "reconciliation balances check",
+                        "output render file",
+                        "round-verification-operations",
+                        ".claude/commands/round-verification.md",
+                        "checkpoint rebuild-location-inventory",
+                    ),
+                ),
+                (
+                    repo_root() / ".claude" / "commands" / "source-intake.md",
+                    (
+                        "source assemble",
+                        "checkpoint extract-pdf-balances",
+                        "checkpoint scaffold-balance-submission",
+                        "checkpoint submit-balances",
+                        "reconciliation balances check",
+                        "output render file",
+                        ".claude/commands/round-verification.md",
+                        "checkpoint rebuild-location-inventory",
+                    ),
+                ),
+            )
+            for needle in needles
+            if needle not in path.read_text(encoding="utf-8")
+        ],
+    ),
+    build_rule(
+        "runtime.round_verification_agent_routes_cover_screen_stage_and_compare",
+        ".agents/skills/round-verification-operations/SKILL.md",
+        lambda: [
+            (_ for _ in ()).throw(
+                AssertionError(f"{path} is missing agent-surface command {needle!r}")
+            )
+            for path in (
+                repo_root()
+                / ".agents"
+                / "skills"
+                / "round-verification-operations"
+                / "SKILL.md",
+                repo_root() / ".claude" / "commands" / "round-verification.md",
+            )
+            for needle in (
+                "batch screen",
+                "batch stage",
+                "round scaffold",
+                "verification compare",
+                "source diff",
+            )
+            if needle not in path.read_text(encoding="utf-8")
         ],
     ),
     build_rule(

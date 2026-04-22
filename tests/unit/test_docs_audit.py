@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -11,6 +12,7 @@ from repo_support.docs_audit.rules import forward_contracts_support
 from repo_support.docs_audit.rules import policy_alignment
 from repo_support.docs_audit.rules import runtime
 from repo_support.docs_audit.reporting import report_payload
+from repo_support.paths import repo_root as repo_root_path
 from tools import audit_docs as audit_docs_tool
 
 
@@ -473,6 +475,106 @@ def test_runtime_rule_rejects_replay_as_normal_operator_step(
             (
                 "source-intake or operator docs present replay validation as a normal operator step"
             ),
+            None,
+        ),
+    )
+
+
+def test_runtime_rule_requires_source_intake_agent_follow_through_commands(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = repo_root_path()
+    skill_path = (
+        repo_root / ".agents" / "skills" / "source-intake-operations" / "SKILL.md"
+    )
+    command_path = repo_root / ".claude" / "commands" / "source-intake.md"
+    original_read_text = Path.read_text
+
+    def fake_read_text(
+        path: Path,
+        encoding: str | None = None,
+        errors: str | None = None,
+    ) -> str:
+        if path == skill_path:
+            return "source normalize --update-mode auto only"
+        if path == command_path:
+            return "\n".join(
+                (
+                    "source normalize --update-mode auto",
+                    "source assemble",
+                    "checkpoint extract-pdf-balances",
+                    "checkpoint scaffold-balance-submission",
+                    "checkpoint submit-balances",
+                    "checkpoint rebuild-location-inventory",
+                    "reconciliation balances check",
+                    "output render file",
+                    ".claude/commands/round-verification.md",
+                )
+            )
+        return original_read_text(path, encoding=encoding, errors=errors)
+
+    monkeypatch.setattr(Path, "read_text", fake_read_text)
+
+    findings = next(
+        rule.run()
+        for rule in runtime.RUNTIME_RULES
+        if rule.rule_id
+        == "runtime.source_intake_agent_routes_match_operator_follow_through"
+    )
+
+    assert findings == (
+        DocsAuditFinding(
+            "runtime.source_intake_agent_routes_match_operator_follow_through",
+            ".agents/skills/source-intake-operations/SKILL.md",
+            (f"{skill_path} is missing agent-surface command 'source assemble'"),
+            None,
+        ),
+    )
+
+
+def test_runtime_rule_requires_round_verification_agent_commands(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = repo_root_path()
+    skill_path = (
+        repo_root / ".agents" / "skills" / "round-verification-operations" / "SKILL.md"
+    )
+    command_path = repo_root / ".claude" / "commands" / "round-verification.md"
+    original_read_text = Path.read_text
+
+    def fake_read_text(
+        path: Path,
+        encoding: str | None = None,
+        errors: str | None = None,
+    ) -> str:
+        if path == skill_path:
+            return "make oracle ARGS='round scaffold' only"
+        if path == command_path:
+            return "\n".join(
+                (
+                    "make oracle ARGS='batch screen'",
+                    "make oracle ARGS='batch stage'",
+                    "make oracle ARGS='round scaffold'",
+                    "make oracle ARGS='verification compare'",
+                    "make oracle ARGS='source diff'",
+                )
+            )
+        return original_read_text(path, encoding=encoding, errors=errors)
+
+    monkeypatch.setattr(Path, "read_text", fake_read_text)
+
+    findings = next(
+        rule.run()
+        for rule in runtime.RUNTIME_RULES
+        if rule.rule_id
+        == "runtime.round_verification_agent_routes_cover_screen_stage_and_compare"
+    )
+
+    assert findings == (
+        DocsAuditFinding(
+            "runtime.round_verification_agent_routes_cover_screen_stage_and_compare",
+            ".agents/skills/round-verification-operations/SKILL.md",
+            (f"{skill_path} is missing agent-surface command 'batch screen'"),
             None,
         ),
     )
