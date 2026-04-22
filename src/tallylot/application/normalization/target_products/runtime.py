@@ -13,7 +13,6 @@ from tallylot.application.capture_paths import (
     economic_facts_compatibility_fact_annotations_file,
     economic_facts_compatibility_facts_file,
     economic_facts_product_file,
-    economic_facts_ref,
     reconciliation_state_compatibility_snapshots_file,
     reconciliation_state_product_file,
     reconciliation_state_ref,
@@ -25,14 +24,13 @@ from tallylot.application.compatibility.checkpoints import (
 from tallylot.application.compatibility.economic_facts import (
     EconomicFactsCompatibilityArtifacts,
 )
-from tallylot.application.economics import build_economic_facts
 from tallylot.application.normalization.contracts import NormalizeUpdateMode
 from tallylot.application.normalization.translation import TranslationExecutionResult
 from tallylot.application.reconciliation import build_reconciliation_states
 from tallylot.domain.balances import BalanceReference, BalanceSnapshot
 from tallylot.domain.checkpoint import Checkpoint, checkpoint_fingerprint
 from tallylot.domain.claim import ClaimSet
-from tallylot.domain.economics import EconomicFacts, economic_facts_fingerprint
+from tallylot.domain.economics import EconomicFacts
 from tallylot.domain.evidence import EvidenceSet
 from tallylot.domain.reconciliation import (
     ReconciliationState,
@@ -59,6 +57,7 @@ from .detail_outputs import (
     refresh_reconciliation_state_snapshots,
 )
 from .kernel_reuse import (
+    resolve_economic_facts_kernel,
     resolve_checkpoint_kernels,
     resolve_reconciliation_state_kernels,
     validate_checkpoint_kernel_ref,
@@ -135,69 +134,27 @@ def resolve_economic_facts(
 ]:
     prior_plan = request.prior_plan
     prior_economic_facts = None if prior_plan is None else prior_plan.economic_facts
-    prior_kernel_unreadable = False
-    can_use_prior_kernel_as_current = (
-        request.update_mode is not NormalizeUpdateMode.REBUILD
-        and prior_plan is not None
-        and prior_economic_facts is not None
-        and prior_plan.claim_set_fingerprint == request.claim_set_fingerprint
-        and (request.workspace_root / prior_economic_facts.economic_facts_ref).is_file()
-    )
-    if can_use_prior_kernel_as_current:
-        assert prior_economic_facts is not None
-        try:
-            economic_facts = request.dependencies.economic_facts.read_economic_facts(
-                request.workspace_root / prior_economic_facts.economic_facts_ref
-            )
-        except DETAIL_READ_EXCEPTIONS:
-            prior_kernel_unreadable = True
-            economic_facts = build_economic_facts(claim_set=request.claim_set)
-            current_fingerprint = economic_facts_fingerprint(economic_facts)
-            economic_facts_ref_value = economic_facts_ref(
-                request.workspace_root,
-                economic_facts.economic_facts_id,
-            )
-            built_current_kernel = True
-        else:
-            current_fingerprint = prior_economic_facts.fingerprint
-            economic_facts_ref_value = prior_economic_facts.economic_facts_ref
-            built_current_kernel = False
-    else:
-        economic_facts = build_economic_facts(claim_set=request.claim_set)
-        current_fingerprint = economic_facts_fingerprint(economic_facts)
-        economic_facts_ref_value = economic_facts_ref(
-            request.workspace_root,
-            economic_facts.economic_facts_id,
-        )
-        built_current_kernel = True
-    if (
-        not prior_kernel_unreadable
-        and prior_economic_facts is not None
-        and not can_use_prior_kernel_as_current
-        and (request.workspace_root / economic_facts_ref_value).is_file()
-    ):
-        try:
-            request.dependencies.economic_facts.read_economic_facts(
-                request.workspace_root / economic_facts_ref_value
-            )
-        except DETAIL_READ_EXCEPTIONS:
-            prior_kernel_unreadable = True
+    kernel_resolution = resolve_economic_facts_kernel(request)
+    economic_facts = kernel_resolution.economic_facts
+    current_fingerprint = kernel_resolution.fingerprint
+    economic_facts_ref_value = kernel_resolution.economic_facts_ref_value
+    existing_kernel_invalid = kernel_resolution.existing_kernel_invalid
     kernel_action = decide_kernel_action(
         update_mode=request.update_mode,
         prior_fingerprint=(
             None
-            if prior_economic_facts is None or prior_kernel_unreadable
+            if prior_economic_facts is None or existing_kernel_invalid
             else prior_economic_facts.fingerprint
         ),
         current_fingerprint=current_fingerprint,
         kernel_exists=(
             (request.workspace_root / economic_facts_ref_value).is_file()
-            and not prior_kernel_unreadable
+            and not existing_kernel_invalid
         ),
         upstream_rebuilt=False,
     )
     if kernel_action is TargetProductStageAction.REBUILT:
-        assert built_current_kernel is True
+        assert kernel_resolution.built_current_kernel is True
         request.dependencies.economic_facts.write_economic_facts(
             economic_facts_product_file(
                 request.workspace_root,
@@ -313,14 +270,14 @@ def resolve_reconciliation_states(
                 None
                 if (
                     prior_state is None
-                    or state_ref_value in validation_state.unreadable_refs
+                    or state_ref_value in validation_state.invalid_refs
                 )
                 else prior_state.fingerprint
             ),
             current_fingerprint=current_fingerprint,
             kernel_exists=(
                 state_path.is_file()
-                and state_ref_value not in validation_state.unreadable_refs
+                and state_ref_value not in validation_state.invalid_refs
             ),
             upstream_rebuilt=False,
         )
@@ -421,14 +378,14 @@ def resolve_checkpoints(
                 None
                 if (
                     prior_checkpoint is None
-                    or checkpoint_ref_value in validation_state.unreadable_refs
+                    or checkpoint_ref_value in validation_state.invalid_refs
                 )
                 else prior_checkpoint.fingerprint
             ),
             current_fingerprint=current_fingerprint,
             kernel_exists=(
                 checkpoint_path.is_file()
-                and checkpoint_ref_value not in validation_state.unreadable_refs
+                and checkpoint_ref_value not in validation_state.invalid_refs
             ),
             upstream_rebuilt=False,
         )

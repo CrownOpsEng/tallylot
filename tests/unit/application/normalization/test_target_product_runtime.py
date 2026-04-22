@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -275,6 +275,84 @@ def test_resolve_reconciliation_states_recomputes_current_partitions_when_eviden
     )
 
 
+def test_resolve_reconciliation_states_rebuilds_semantically_drifted_persisted_kernel(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    dependencies = _Dependencies()
+    prior_state = _sample_state(state_id="state-1", quantity="1.25")
+    drifted_state = replace(
+        prior_state,
+        checkpoint_proposal_records=(
+            replace(
+                prior_state.checkpoint_proposal_records[0],
+                status=CheckpointProposalStatus.PARTIAL,
+            ),
+        ),
+    )
+    state_path = workspace_root / reconciliation_state_ref(
+        workspace_root,
+        prior_state.reconciliation_state_id,
+    )
+    dependencies.reconciliation_states.write_reconciliation_state(
+        state_path, drifted_state
+    )
+    dependencies.evidence.write_balance_snapshots(
+        reconciliation_state_compatibility_snapshots_file(
+            workspace_root,
+            prior_state.reconciliation_state_id,
+        ),
+        project_balance_snapshots_from_reconciliation_state(drifted_state),
+    )
+    prior_plan = TargetProductExecutionPlan(
+        signature_version=TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION,
+        update_mode_requested="auto",
+        update_mode_effective="auto",
+        claim_set_fingerprint="claim-fingerprint",
+        economic_facts=None,
+        reconciliation_states=(_state_decision(workspace_root, prior_state),),
+        checkpoints=(),
+    )
+
+    def _build_reconciliation_states(
+        *,
+        economic_facts: EconomicFacts,
+        claim_set: ClaimSet,
+        evidence_set: EvidenceSet,
+    ) -> tuple[ReconciliationState]:
+        del economic_facts, claim_set, evidence_set
+        return (prior_state,)
+
+    monkeypatch.setattr(
+        runtime_module,
+        "build_reconciliation_states",
+        _build_reconciliation_states,
+    )
+
+    _, decisions, _ = resolve_reconciliation_states(
+        ReconciliationStateResolutionRequest(
+            workspace_root=workspace_root,
+            update_mode=NormalizeUpdateMode.AUTO,
+            claim_set=cast(ClaimSet, object()),
+            claim_set_fingerprint="claim-fingerprint",
+            evidence_set=_sample_evidence_set(),
+            prior_evidence_set_id="evidence-set-1",
+            economic_facts=cast(EconomicFacts, object()),
+            economic_facts_reused=True,
+            prior_plan=prior_plan,
+            dependencies=dependencies,
+        )
+    )
+
+    assert decisions[0].kernel_action is TargetProductStageAction.REBUILT
+    assert decisions[0].snapshot_action is TargetProductStageAction.REFRESHED
+    assert (
+        dependencies.reconciliation_states.read_reconciliation_state(state_path)
+        == prior_state
+    )
+
+
 def test_resolve_checkpoints_reuses_unchanged_current_partitions(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -380,6 +458,87 @@ def test_resolve_checkpoints_reuses_unchanged_current_partitions(
     assert decisions[0].reference_action is TargetProductStageAction.REUSED
     assert decisions[1].kernel_action is TargetProductStageAction.REBUILT
     assert decisions[1].reference_action is TargetProductStageAction.REFRESHED
+
+
+def test_resolve_checkpoints_rebuilds_semantically_drifted_persisted_kernel(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    dependencies = _Dependencies()
+    evidence_set = _sample_evidence_set()
+    state = _sample_state(state_id="state-1", quantity="1.25")
+    prior_checkpoint = _sample_checkpoint(
+        checkpoint_id="checkpoint-1",
+        state=state,
+        quantity="1.25",
+    )
+    drifted_checkpoint = replace(
+        prior_checkpoint,
+        checkpoint_assertion_records=(
+            replace(
+                prior_checkpoint.checkpoint_assertion_records[0],
+                trust_level=CheckpointAssertionTrustLevel.ANALYSIS_READY,
+            ),
+        ),
+    )
+    checkpoint_path = workspace_root / checkpoint_ref(
+        workspace_root,
+        prior_checkpoint.checkpoint_id,
+    )
+    dependencies.checkpoints.write_checkpoint(checkpoint_path, drifted_checkpoint)
+    dependencies.evidence.write_balance_references(
+        checkpoint_compatibility_references_file(
+            workspace_root,
+            prior_checkpoint.checkpoint_id,
+        ),
+        project_balance_references_from_checkpoint(
+            checkpoint=drifted_checkpoint,
+            reconciliation_states=(state,),
+            observation_details=observation_details_from_evidence_set(evidence_set),
+        ),
+    )
+    prior_plan = TargetProductExecutionPlan(
+        signature_version=TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION,
+        update_mode_requested="auto",
+        update_mode_effective="auto",
+        claim_set_fingerprint="claim-fingerprint",
+        economic_facts=None,
+        reconciliation_states=(),
+        checkpoints=(
+            _checkpoint_decision(
+                workspace_root,
+                prior_checkpoint,
+                evidence_set,
+                (state,),
+            ),
+        ),
+    )
+
+    def _build_checkpoints(
+        *, reconciliation_states: tuple[ReconciliationState, ...]
+    ) -> tuple[Checkpoint]:
+        del reconciliation_states
+        return (prior_checkpoint,)
+
+    monkeypatch.setattr(runtime_module, "build_checkpoints", _build_checkpoints)
+
+    _, decisions, _ = resolve_checkpoints(
+        CheckpointResolutionRequest(
+            workspace_root=workspace_root,
+            update_mode=NormalizeUpdateMode.AUTO,
+            claim_set_fingerprint="claim-fingerprint",
+            evidence_set=evidence_set,
+            reconciliation_states=(state,),
+            reconciliation_states_reused=True,
+            prior_plan=prior_plan,
+            dependencies=dependencies,
+        )
+    )
+
+    assert decisions[0].kernel_action is TargetProductStageAction.REBUILT
+    assert decisions[0].reference_action is TargetProductStageAction.REFRESHED
+    assert dependencies.checkpoints.read_checkpoint(checkpoint_path) == prior_checkpoint
 
 
 def _sample_state(*, state_id: str, quantity: str) -> ReconciliationState:
