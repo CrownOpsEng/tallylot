@@ -163,6 +163,7 @@ def test_resolve_reconciliation_states_reuses_unchanged_current_partitions(
             claim_set=cast(ClaimSet, object()),
             claim_set_fingerprint="current-claim-fingerprint",
             evidence_set=_sample_evidence_set(),
+            prior_evidence_set_id="evidence-set-1",
             economic_facts=cast(EconomicFacts, object()),
             economic_facts_reused=False,
             prior_plan=prior_plan,
@@ -178,6 +179,100 @@ def test_resolve_reconciliation_states_reuses_unchanged_current_partitions(
     assert decisions[0].snapshot_action is TargetProductStageAction.REUSED
     assert decisions[1].kernel_action is TargetProductStageAction.REBUILT
     assert decisions[1].snapshot_action is TargetProductStageAction.REFRESHED
+
+
+def test_resolve_reconciliation_states_recomputes_current_partitions_when_evidence_changes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    dependencies = _Dependencies()
+    prior_state = _sample_state(state_id="state-1", quantity="1.25")
+    state_path = workspace_root / reconciliation_state_ref(
+        workspace_root,
+        prior_state.reconciliation_state_id,
+    )
+    dependencies.reconciliation_states.write_reconciliation_state(
+        state_path, prior_state
+    )
+    dependencies.evidence.write_balance_snapshots(
+        reconciliation_state_compatibility_snapshots_file(
+            workspace_root,
+            prior_state.reconciliation_state_id,
+        ),
+        project_balance_snapshots_from_reconciliation_state(prior_state),
+    )
+    prior_plan = TargetProductExecutionPlan(
+        signature_version=TARGET_PRODUCT_EXECUTION_SIGNATURE_VERSION,
+        update_mode_requested="auto",
+        update_mode_effective="auto",
+        claim_set_fingerprint="claim-fingerprint",
+        economic_facts=None,
+        reconciliation_states=(_state_decision(workspace_root, prior_state),),
+        checkpoints=(),
+    )
+    rebuilt_state = ReconciliationState(
+        reconciliation_state_id="state-1",
+        economic_facts_ref="facts-1",
+        continuity_segment_records=prior_state.continuity_segment_records,
+        event_link_records=prior_state.event_link_records,
+        balance_target_records=prior_state.balance_target_records,
+        checkpoint_proposal_records=(
+            CheckpointProposalRecord(
+                proposal_id="proposal-state-1",
+                segment_id="segment-state-1",
+                subject_ref=prior_state.balance_target_records[0].subject_ref,
+                as_of=prior_state.balance_target_records[0].as_of,
+                status=CheckpointProposalStatus.PARTIAL,
+                superseding_proposal_ref="",
+                target_refs=("target-state-1",),
+                evidence_refs=(),
+            ),
+        ),
+    )
+    build_called = False
+
+    def _build_reconciliation_states(
+        *,
+        economic_facts: EconomicFacts,
+        claim_set: ClaimSet,
+        evidence_set: EvidenceSet,
+    ) -> tuple[ReconciliationState]:
+        nonlocal build_called
+        del economic_facts, claim_set, evidence_set
+        build_called = True
+        return (rebuilt_state,)
+
+    monkeypatch.setattr(
+        runtime_module,
+        "build_reconciliation_states",
+        _build_reconciliation_states,
+    )
+
+    _, decisions, _ = resolve_reconciliation_states(
+        ReconciliationStateResolutionRequest(
+            workspace_root=workspace_root,
+            update_mode=NormalizeUpdateMode.AUTO,
+            claim_set=cast(ClaimSet, object()),
+            claim_set_fingerprint="claim-fingerprint",
+            evidence_set=_sample_evidence_set(evidence_set_id="evidence-set-2"),
+            prior_evidence_set_id="evidence-set-1",
+            economic_facts=cast(EconomicFacts, object()),
+            economic_facts_reused=True,
+            prior_plan=prior_plan,
+            dependencies=dependencies,
+        )
+    )
+
+    assert build_called is True
+    assert decisions[0].kernel_action is TargetProductStageAction.REBUILT
+    assert decisions[0].snapshot_action is TargetProductStageAction.REFRESHED
+    persisted_state = dependencies.reconciliation_states.read_reconciliation_state(
+        state_path
+    )
+    assert persisted_state.checkpoint_proposal_records[0].status is (
+        CheckpointProposalStatus.PARTIAL
+    )
 
 
 def test_resolve_checkpoints_reuses_unchanged_current_partitions(
@@ -384,14 +479,14 @@ def _sample_checkpoint(
     )
 
 
-def _sample_evidence_set() -> EvidenceSet:
+def _sample_evidence_set(*, evidence_set_id: str = "evidence-set-1") -> EvidenceSet:
     return EvidenceSet(
-        evidence_set_id="evidence-set-1",
+        evidence_set_id=evidence_set_id,
         selection_fingerprint="selection-1",
         capture_manifest_fingerprint="manifest-1",
         evidence_selection_records=(
             EvidenceSelectionRecord(
-                evidence_set_id="evidence-set-1",
+                evidence_set_id=evidence_set_id,
                 selection_id="selection-1",
                 key=("statement_document", "statement.pdf"),
                 fingerprint="selection-fingerprint",
@@ -400,7 +495,7 @@ def _sample_evidence_set() -> EvidenceSet:
         ),
         evidence_member_records=(
             EvidenceMemberRecord(
-                evidence_set_id="evidence-set-1",
+                evidence_set_id=evidence_set_id,
                 selection_id="selection-1",
                 member_id="member-1",
                 source_slug="coinbase",
@@ -414,7 +509,7 @@ def _sample_evidence_set() -> EvidenceSet:
         ),
         evidence_observation_records=(
             EvidenceObservationRecord(
-                evidence_set_id="evidence-set-1",
+                evidence_set_id=evidence_set_id,
                 member_id="member-1",
                 observation_id="observation-1",
                 kind=EvidenceObservationKind.STATEMENT_DOCUMENT,

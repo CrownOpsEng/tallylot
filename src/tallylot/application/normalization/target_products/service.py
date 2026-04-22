@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+from json import JSONDecodeError
 from pathlib import Path
+from typing import cast
 
 from tallylot.application.normalization.contracts import NormalizeUpdateMode
 from tallylot.application.normalization.translation import TranslationExecutionResult
@@ -83,6 +86,10 @@ def build_target_product_execution(
 ) -> TargetProductExecutionResult:
     summary_path = normalization_output_dir / "normalization_summary.json"
     prior_plan = load_prior_target_product_execution(summary_path)
+    prior_evidence_set_id = _load_prior_summary_id(
+        summary_path,
+        "evidence_set_id",
+    )
     pruned_economic_facts_refs = _pruned_economic_facts_refs(prior_plan, "")
     claim_set = translation_result.claim_set
     evidence_set = translation_result.evidence_set
@@ -167,6 +174,7 @@ def build_target_product_execution(
             claim_set=claim_set,
             claim_set_fingerprint=claim_set_fingerprint,
             evidence_set=evidence_set,
+            prior_evidence_set_id=prior_evidence_set_id,
             economic_facts=economic_facts,
             economic_facts_reused=(
                 economic_facts_decision.kernel_action.value == "reused"
@@ -324,3 +332,19 @@ def _ordered_references(
             ),
         )
     )
+
+
+def _load_prior_summary_id(summary_path: Path, key: str) -> str | None:
+    if not summary_path.is_file():
+        return None
+    try:
+        payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    except (JSONDecodeError, OSError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    typed_payload = cast(dict[str, JsonValue], payload)
+    value = typed_payload.get(key)
+    if isinstance(value, str) and value:
+        return value
+    return None

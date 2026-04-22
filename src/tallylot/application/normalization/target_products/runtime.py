@@ -58,6 +58,12 @@ from .detail_outputs import (
     refresh_economic_facts_compatibility,
     refresh_reconciliation_state_snapshots,
 )
+from .kernel_reuse import (
+    resolve_checkpoint_kernels,
+    resolve_reconciliation_state_kernels,
+    validate_checkpoint_kernel_ref,
+    validate_reconciliation_state_kernel_ref,
+)
 from .planning import decide_detail_action, decide_kernel_action
 from .payloads import read_fact_annotations
 from .signatures import (
@@ -70,19 +76,14 @@ from .signatures import (
 class TargetProductDependenciesProtocol(Protocol):
     @property
     def facts(self) -> FactRepositoryPort: ...
-
     @property
     def evidence(self) -> EvidenceRepositoryPort: ...
-
     @property
     def economic_facts(self) -> EconomicFactsRepositoryPort: ...
-
     @property
     def reconciliation_states(self) -> ReconciliationStateRepositoryPort: ...
-
     @property
     def checkpoints(self) -> CheckpointRepositoryPort: ...
-
     @property
     def artifacts(self) -> ArtifactStorePort: ...
 
@@ -106,6 +107,7 @@ class ReconciliationStateResolutionRequest:
     claim_set: ClaimSet
     claim_set_fingerprint: str
     evidence_set: EvidenceSet
+    prior_evidence_set_id: str | None
     economic_facts: EconomicFacts
     economic_facts_reused: bool
     prior_plan: TargetProductExecutionPlan | None
@@ -133,6 +135,7 @@ def resolve_economic_facts(
 ]:
     prior_plan = request.prior_plan
     prior_economic_facts = None if prior_plan is None else prior_plan.economic_facts
+    prior_kernel_unreadable = False
     can_use_prior_kernel_as_current = (
         request.update_mode is not NormalizeUpdateMode.REBUILD
         and prior_plan is not None
@@ -142,12 +145,23 @@ def resolve_economic_facts(
     )
     if can_use_prior_kernel_as_current:
         assert prior_economic_facts is not None
-        economic_facts = request.dependencies.economic_facts.read_economic_facts(
-            request.workspace_root / prior_economic_facts.economic_facts_ref
-        )
-        current_fingerprint = prior_economic_facts.fingerprint
-        economic_facts_ref_value = prior_economic_facts.economic_facts_ref
-        built_current_kernel = False
+        try:
+            economic_facts = request.dependencies.economic_facts.read_economic_facts(
+                request.workspace_root / prior_economic_facts.economic_facts_ref
+            )
+        except DETAIL_READ_EXCEPTIONS:
+            prior_kernel_unreadable = True
+            economic_facts = build_economic_facts(claim_set=request.claim_set)
+            current_fingerprint = economic_facts_fingerprint(economic_facts)
+            economic_facts_ref_value = economic_facts_ref(
+                request.workspace_root,
+                economic_facts.economic_facts_id,
+            )
+            built_current_kernel = True
+        else:
+            current_fingerprint = prior_economic_facts.fingerprint
+            economic_facts_ref_value = prior_economic_facts.economic_facts_ref
+            built_current_kernel = False
     else:
         economic_facts = build_economic_facts(claim_set=request.claim_set)
         current_fingerprint = economic_facts_fingerprint(economic_facts)
@@ -156,13 +170,30 @@ def resolve_economic_facts(
             economic_facts.economic_facts_id,
         )
         built_current_kernel = True
+    if (
+        not prior_kernel_unreadable
+        and prior_economic_facts is not None
+        and not can_use_prior_kernel_as_current
+        and (request.workspace_root / economic_facts_ref_value).is_file()
+    ):
+        try:
+            request.dependencies.economic_facts.read_economic_facts(
+                request.workspace_root / economic_facts_ref_value
+            )
+        except DETAIL_READ_EXCEPTIONS:
+            prior_kernel_unreadable = True
     kernel_action = decide_kernel_action(
         update_mode=request.update_mode,
         prior_fingerprint=(
-            None if prior_economic_facts is None else prior_economic_facts.fingerprint
+            None
+            if prior_economic_facts is None or prior_kernel_unreadable
+            else prior_economic_facts.fingerprint
         ),
         current_fingerprint=current_fingerprint,
-        kernel_exists=(request.workspace_root / economic_facts_ref_value).is_file(),
+        kernel_exists=(
+            (request.workspace_root / economic_facts_ref_value).is_file()
+            and not prior_kernel_unreadable
+        ),
         upstream_rebuilt=False,
     )
     if kernel_action is TargetProductStageAction.REBUILT:
@@ -246,30 +277,15 @@ def resolve_reconciliation_states(
 ]:
     prior_plan = request.prior_plan
     prior_states = () if prior_plan is None else prior_plan.reconciliation_states
-    can_use_prior_kernels_as_current = (
-        request.update_mode is not NormalizeUpdateMode.REBUILD
-        and prior_plan is not None
-        and prior_plan.claim_set_fingerprint == request.claim_set_fingerprint
-        and request.economic_facts_reused
-        and prior_states
-        and all(
-            (request.workspace_root / decision.reconciliation_state_ref).is_file()
-            for decision in prior_states
-        )
-    )
-    if can_use_prior_kernels_as_current:
-        states = tuple(
-            request.dependencies.reconciliation_states.read_reconciliation_state(
-                request.workspace_root / decision.reconciliation_state_ref
-            )
-            for decision in prior_states
-        )
-    else:
-        states = build_reconciliation_states(
+    states, validation_state = resolve_reconciliation_state_kernels(
+        request=request,
+        prior_states=prior_states,
+        build_current=lambda: build_reconciliation_states(
             economic_facts=request.economic_facts,
             claim_set=request.claim_set,
             evidence_set=request.evidence_set,
-        )
+        ),
+    )
 
     prior_by_ref = {
         decision.reconciliation_state_ref: decision for decision in prior_states
@@ -281,16 +297,31 @@ def resolve_reconciliation_states(
             request.workspace_root,
             state.reconciliation_state_id,
         )
+        state_path = request.workspace_root / state_ref_value
+        prior_state = prior_by_ref.get(state_ref_value)
+        validate_reconciliation_state_kernel_ref(
+            request=request,
+            state_ref_value=state_ref_value,
+            state_path=state_path,
+            prior_state=prior_state,
+            validation_state=validation_state,
+        )
         current_fingerprint = reconciliation_state_fingerprint(state)
         kernel_action = decide_kernel_action(
             update_mode=request.update_mode,
             prior_fingerprint=(
                 None
-                if (prior_state := prior_by_ref.get(state_ref_value)) is None
+                if (
+                    prior_state is None
+                    or state_ref_value in validation_state.unreadable_refs
+                )
                 else prior_state.fingerprint
             ),
             current_fingerprint=current_fingerprint,
-            kernel_exists=(request.workspace_root / state_ref_value).is_file(),
+            kernel_exists=(
+                state_path.is_file()
+                and state_ref_value not in validation_state.unreadable_refs
+            ),
             upstream_rebuilt=False,
         )
         if kernel_action is TargetProductStageAction.REBUILT:
@@ -357,27 +388,13 @@ def resolve_checkpoints(
 ]:
     prior_plan = request.prior_plan
     prior_checkpoints = () if prior_plan is None else prior_plan.checkpoints
-    can_use_prior_kernels_as_current = (
-        request.update_mode is not NormalizeUpdateMode.REBUILD
-        and prior_plan is not None
-        and prior_plan.claim_set_fingerprint == request.claim_set_fingerprint
-        and request.reconciliation_states_reused
-        and all(
-            (request.workspace_root / decision.checkpoint_ref).is_file()
-            for decision in prior_checkpoints
-        )
-    )
-    if can_use_prior_kernels_as_current:
-        checkpoints = tuple(
-            request.dependencies.checkpoints.read_checkpoint(
-                request.workspace_root / decision.checkpoint_ref
-            )
-            for decision in prior_checkpoints
-        )
-    else:
-        checkpoints = build_checkpoints(
+    checkpoints, validation_state = resolve_checkpoint_kernels(
+        request=request,
+        prior_checkpoints=prior_checkpoints,
+        build_current=lambda: build_checkpoints(
             reconciliation_states=request.reconciliation_states
-        )
+        ),
+    )
 
     prior_by_ref = {decision.checkpoint_ref: decision for decision in prior_checkpoints}
     observation_details = observation_details_from_evidence_set(request.evidence_set)
@@ -388,16 +405,31 @@ def resolve_checkpoints(
             request.workspace_root,
             checkpoint.checkpoint_id,
         )
+        checkpoint_path = request.workspace_root / checkpoint_ref_value
+        prior_checkpoint = prior_by_ref.get(checkpoint_ref_value)
+        validate_checkpoint_kernel_ref(
+            request=request,
+            checkpoint_ref_value=checkpoint_ref_value,
+            checkpoint_path=checkpoint_path,
+            prior_checkpoint=prior_checkpoint,
+            validation_state=validation_state,
+        )
         current_fingerprint = checkpoint_fingerprint(checkpoint)
         kernel_action = decide_kernel_action(
             update_mode=request.update_mode,
             prior_fingerprint=(
                 None
-                if (prior_checkpoint := prior_by_ref.get(checkpoint_ref_value)) is None
+                if (
+                    prior_checkpoint is None
+                    or checkpoint_ref_value in validation_state.unreadable_refs
+                )
                 else prior_checkpoint.fingerprint
             ),
             current_fingerprint=current_fingerprint,
-            kernel_exists=(request.workspace_root / checkpoint_ref_value).is_file(),
+            kernel_exists=(
+                checkpoint_path.is_file()
+                and checkpoint_ref_value not in validation_state.unreadable_refs
+            ),
             upstream_rebuilt=False,
         )
         if kernel_action is TargetProductStageAction.REBUILT:
