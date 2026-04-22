@@ -17,12 +17,17 @@ _EPHEMERAL_DELIVERY_LABEL_PATTERN = re.compile(
     r"\b(?:roadmap|phase(?:[ _-]?(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)))\b",
     re.IGNORECASE,
 )
+_FORBIDDEN_DURABLE_PHRASES = (
+    "Phase 6 artifacts",
+    "roadmap trigger ladder",
+    "next architecture phase",
+)
 _DURABLE_NON_PLANNING_SURFACE_PATHS = (
     "CHANGELOG.md",
-    "docs/concepts/architecture-overview.md",
-    "docs/reference/evidence-claim-contract.md",
+    "docs/guides/operator-quickstart.md",
+    "docs/guides/source-intake.md",
+    "docs/guides/normalize-screen-stage.md",
     "docs/status/current-state.md",
-    "docs/status/migration-sequence.md",
     "docs/workspace/working/products/README.md",
 )
 
@@ -59,6 +64,26 @@ def _durable_non_planning_surface_findings() -> tuple[DocsAuditFinding, ...]:
     return tuple(findings)
 
 
+def _durable_non_planning_surface_phrase_findings() -> tuple[DocsAuditFinding, ...]:
+    findings: list[DocsAuditFinding] = []
+    rule_id = (
+        "policy_alignment."
+        "durable_non_planning_surfaces_do_not_use_forbidden_planning_phrases"
+    )
+    for path, text in _durable_non_planning_surface_texts():
+        for phrase in _FORBIDDEN_DURABLE_PHRASES:
+            if phrase not in _masked_ephemeral_delivery_text(text):
+                continue
+            findings.append(
+                finding(
+                    rule_id,
+                    path,
+                    f"{path} uses forbidden planning phrase: {phrase}",
+                )
+            )
+    return tuple(findings)
+
+
 POLICY_ALIGNMENT_RULES = (
     DocsAuditRule(
         rule_id=(
@@ -66,6 +91,13 @@ POLICY_ALIGNMENT_RULES = (
             "durable_non_planning_surfaces_do_not_use_ephemeral_delivery_labels"
         ),
         run=_durable_non_planning_surface_findings,
+    ),
+    DocsAuditRule(
+        rule_id=(
+            "policy_alignment."
+            "durable_non_planning_surfaces_do_not_use_forbidden_planning_phrases"
+        ),
+        run=_durable_non_planning_surface_phrase_findings,
     ),
     build_rule(
         "policy_alignment.docs_do_not_reference_retired_service_or_model_buckets",
@@ -292,6 +324,7 @@ POLICY_ALIGNMENT_RULES = (
                 "platform-native enforcement",
                 "repo-native policy as code",
                 "agent default behavior",
+                "ROADMAP.md` is not the only\n  allowed planning surface",
                 "draft by default",
                 "ready for review",
                 "evidence-backed findings",
@@ -329,7 +362,8 @@ POLICY_ALIGNMENT_RULES = (
                 "bridge cutover matrix inventory, owner, compatibility, reader, and gate",
                 "`docs/README.md` generated reference-group headings/order are",
                 "required `naming_scope` frontmatter/default behavior is",
-                "planning and forward-looking docs may use roadmap-owned ephemeral tags",
+                "forward-looking docs may use ephemeral planning language",
+                "`ROADMAP.md` is not the only allowed\n  planning surface",
                 "delivery metadata surfaces must stay",
                 "treat the blocking `target-naming` review check as the repo-native guard",
             )

@@ -13,7 +13,6 @@ related:
   - docs/reference/evidence-claim-contract.md
   - docs/reference/economics-reconciliation-checkpoint-contract.md
   - docs/reference/journal-contract.md
-  - ROADMAP.md
 ---
 
 Use this page when you need target persistence guidance. It does not define a
@@ -68,8 +67,8 @@ When persisting target products:
 - backend-generated artifacts are never authoritative storage and never the
   primary cross-capability query API
 - keep grouped readiness as tax-output-local, narrow rendering-local, or
-  compatibility-local derived output until the roadmap trigger ladder
-  activates a capability-owned read-model surface
+  compatibility-local derived output until a later capability-specific
+  increment activates a capability-owned read-model surface
 - keep assessment family directories and basenames aligned to the stored
   families, for example `assessment/gap/gap_records.json`,
   `assessment/review/review_records.json`

@@ -30,6 +30,41 @@
   "reviews_outside_normalization_window": 0,
   "snapshot_count": 0,
   "source": "Future Exchange",
+  "target_product_execution": {
+    "checkpoints": [],
+    "claim_set_fingerprint": "0acaa78b0388affa4c5ce3ddb964702ddcc3f769f2c3bd733873d77633380479",
+    "economic_facts": {
+      "compatibility_action": "refreshed",
+      "compatibility_signature": "066f50aaf1584dd23a24a3cabda6948fee8aac9fd75a0c3fbe2cb6429304f645",
+      "economic_facts_id": "551876ba206055d174c3e685b98d4d3cb4c2932227eb267dc189d36addf99150",
+      "economic_facts_ref": "working/products/economic_facts/551876ba206055d174c3e685b98d4d3cb4c2932227eb267dc189d36addf99150/economic_facts.json",
+      "fingerprint": "4e174a0f32d6685dcded94a42c3e8942742dbcf1c2ce2705718a8d6067853b84",
+      "kernel_action": "rebuilt"
+    },
+    "pruned_checkpoint_refs": [],
+    "pruned_reconciliation_state_refs": [],
+    "reconciliation_states": [
+      {
+        "fingerprint": "38e1d1ba8e4d2a5c84a49f83d5f47186045fc7177b86c0bec5c5f249c4fae6e8",
+        "kernel_action": "rebuilt",
+        "reconciliation_state_id": "edcb66bda67844384658b856ce4ac114e0eb411e4147da5af091c1bf8da1181d",
+        "reconciliation_state_ref": "working/products/reconciliation_states/edcb66bda67844384658b856ce4ac114e0eb411e4147da5af091c1bf8da1181d/reconciliation_state.json",
+        "snapshot_action": "refreshed",
+        "snapshot_signature": "a6769fc1df76eb627929214b439c5ef0360dcb45cbd2a296161d6bc88f341288"
+      },
+      {
+        "fingerprint": "5ceca90fcffb1e2123f5f1cbf85b5768f0438776520da5ff77a475a32a5cfe22",
+        "kernel_action": "rebuilt",
+        "reconciliation_state_id": "edeba9265425f865577c26963b06f3193086188c38ffb29720f8e01dd0218af4",
+        "reconciliation_state_ref": "working/products/reconciliation_states/edeba9265425f865577c26963b06f3193086188c38ffb29720f8e01dd0218af4/reconciliation_state.json",
+        "snapshot_action": "refreshed",
+        "snapshot_signature": "a6769fc1df76eb627929214b439c5ef0360dcb45cbd2a296161d6bc88f341288"
+      }
+    ],
+    "signature_version": "normalization-target-products-v1",
+    "update_mode_effective": "auto",
+    "update_mode_requested": "auto"
+  },
   "translation_blocked_count": 0,
   "translation_candidate_count": 1,
   "translation_planner_used": true,

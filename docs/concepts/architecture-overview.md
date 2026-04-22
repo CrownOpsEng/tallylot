@@ -101,8 +101,7 @@ These pages define the primary current-state and forward-looking contracts:
 | [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md) | reconciliation, checkpoint, journal, and tax trust gates plus persistence, partitioning, and fast-path rules |
 | [Evidence And Claim Contract](../reference/evidence-claim-contract.md) | current bounded `EvidenceSet -> ClaimSet` contract scope |
 | [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md) | current bounded `EconomicFacts -> ReconciliationState -> Checkpoint` contract scope |
-| [Journal Contract](../reference/journal-contract.md) | bounded contract for the canonical accounting journal and the first ledger backend seam |
-| [ROADMAP.md](../../ROADMAP.md) | planning-only sequencing and later rollout detail |
+| [Journal Contract](../reference/journal-contract.md) | bounded contract for the canonical accounting journal and the bounded accounting backend seam |
 | [Current State](../status/current-state.md) | implemented runtime truth and live package layout |
 
 Supporting id, ref, persistence, and workspace references remain under

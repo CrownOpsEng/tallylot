@@ -22,7 +22,7 @@ _REQUIRED_JOURNAL_CONTRACT_NEEDLES = (
         "on\n"
         "  demand for accounting inspection and verification; they are not "
         "durable\n"
-        "  Phase 6 artifacts"
+        "  backend-owned persisted artifacts"
     ),
     "`ledger-cli` does not mint ids, define tax identity, or become authoritative\n  storage",
 )

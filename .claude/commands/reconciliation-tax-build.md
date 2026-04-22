@@ -5,9 +5,9 @@ reconciliation, checkpoint, journal, and tax buildout.
 
 1. Read `docs/concepts/reconciliation-tax-architecture.md` first.
 2. Read these before shaping any non-trivial increment:
-   - `ROADMAP.md`
-   - `docs/status/migration-sequence.md`
    - `docs/status/current-state.md`
+   - `docs/status/migration-sequence.md`
+   - `ROADMAP.md` for planning-only sequencing detail
 3. Read these when the task touches boundaries, naming, or sequencing:
    - `docs/concepts/oracle-boundaries.md`
    - `docs/concepts/transaction-classification.md`
@@ -24,8 +24,8 @@ reconciliation, checkpoint, journal, and tax buildout.
    - CoinTracking oracle parsing
 5. If the task changes architecture, naming, or sequencing decisions, update
    `docs/concepts/reconciliation-tax-architecture.md` and `ROADMAP.md` in the
-   same checkpoint, and update `docs/status/migration-sequence.md` when phase
-   order, bridge rules, or checkpoint criteria changed. Run
+   same checkpoint, and update `docs/status/migration-sequence.md` when
+   ordering, bridge rules, or checkpoint criteria changed. Run
    `make naming-check` when forward-looking target names, ids, directory
    families, titles, or summaries changed.
 6. Keep these boundaries:

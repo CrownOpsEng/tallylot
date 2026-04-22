@@ -15,7 +15,6 @@ related:
   - docs/reference/target-ids-and-refs.md
   - docs/reference/target-persistence-reference.md
   - docs/status/migration-sequence.md
-  - ROADMAP.md
 ---
 
 Use this page when implementing or reviewing the bounded `Journal` increment
@@ -135,14 +134,14 @@ Backend request and result contract:
   - `message`
   - optional backend-native code
 
-Bounded Phase 6 backend operations:
+Bounded backend operations:
 
 - `print`
 - `accounts`
 - `balance`
 - `register`
 
-Not part of the Phase 6 backend seam:
+Not part of the bounded accounting backend seam:
 
 - `equity`
 - `csv`
@@ -219,7 +218,7 @@ Rules:
   kernel already names the checked scope
 - `print`, `accounts`, `balance`, and `register` outputs are generated on
   demand for accounting inspection and verification; they are not durable
-  Phase 6 artifacts
+  backend-owned persisted artifacts
 - persisted detail rows sort lexicographically by their owning stable ids and
   remain reproducible from authoritative `Journal` kernels plus declared
   upstream refs
@@ -438,5 +437,5 @@ This slice does not:
   chart namespaces, or output-adapter-owned chart namespaces
 - treat `ledger-cli` as the ledger of record or as the source of authoritative
   journal ids
-- route the journal backend seam through the current fact-output compatibility
+- route the accounting backend seam through the current fact-output compatibility
   rendering path or `ports/output_adapters.py`

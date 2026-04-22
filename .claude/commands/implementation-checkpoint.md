@@ -32,6 +32,9 @@ Use this route before closing any non-trivial coding task.
    Confirm durable delivery metadata stayed phase-free and roadmap-free, branch
    naming uses an approved `<root>/<slug>` root plus slug, and live docs policy
    enforcement stayed in the owning scripts rather than duplicated in pytest.
+   Confirm the staged checkpoint boundary is clean: stage only the intended
+   files for the current checkpoint and keep forward-looking planning language
+   off durable metadata surfaces.
 6. Confirm meaningful out-of-scope repo work is not stranded in notes:
    - search for an existing issue first
    - create the follow-up issue immediately when no suitable issue exists

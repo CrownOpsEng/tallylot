@@ -132,6 +132,13 @@ def _seed_reference_workspace(
             normalized_output_ref=to_resource_ref(normalized_root),
         )
     )
+    normalize_source_use_case().execute(
+        NormalizeRequest(
+            source=pack.source,
+            raw_capture_ref=to_resource_ref(raw_capture_root),
+            normalized_output_ref=to_resource_ref(normalized_root),
+        )
+    )
     assemble_source_use_case().execute(
         AssembleSourceRequest(
             source=pack.source,

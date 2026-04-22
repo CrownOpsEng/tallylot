@@ -962,6 +962,41 @@ retired_aliases:
       - docs/concepts/pipeline-stage-contracts.md
       - docs/reference/economics-reconciliation-checkpoint-contract.md
     allowed_paths: []
+  - rule_id: body.accounting_boundary_term
+    term: application/journal/
+    replacement: application/accounting/
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.accounting_boundary_term
+    term: domain/journal/
+    replacement: domain/accounting/
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.accounting_boundary_term
+    term: journal backend seam
+    replacement: accounting backend seam
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.accounting_boundary_term
+    term: ledger backend seam
+    replacement: accounting backend seam
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.accounting_boundary_term
+    term: first ledger backend seam
+    replacement: bounded accounting backend seam
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
   - rule_id: body.subject_ref_slot
     term: subject_id
     replacement: subject_key

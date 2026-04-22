@@ -3,8 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 
 from tallylot.domain.types import ResourceRef
+
+
+class NormalizeUpdateMode(StrEnum):
+    AUTO = "auto"
+    FULL_UPDATE = "full-update"
+    REBUILD = "rebuild"
 
 
 @dataclass(frozen=True)
@@ -12,6 +19,7 @@ class NormalizeRequest:
     source: str
     raw_capture_ref: ResourceRef
     normalized_output_ref: ResourceRef
+    update_mode: NormalizeUpdateMode = NormalizeUpdateMode.AUTO
     window_start: str | None = None
     window_end: str | None = None
     inspect_archives: bool = True
@@ -35,6 +43,12 @@ class NormalizeResponse:
     reconciliation_state_refs: tuple[str, ...] = ()
     checkpoint_ids: tuple[str, ...] = ()
     checkpoint_refs: tuple[str, ...] = ()
+    update_mode_requested: str = NormalizeUpdateMode.AUTO.value
+    update_mode_effective: str = NormalizeUpdateMode.AUTO.value
+    reused_target_product_count: int = 0
+    rebuilt_target_product_count: int = 0
+    pruned_target_product_count: int = 0
+    refreshed_detail_output_count: int = 0
     translation_candidate_count: int = 0
     translation_selected_count: int = 0
     translation_superseded_count: int = 0

@@ -12,7 +12,6 @@ related:
   - docs/reference/journal-contract.md
   - docs/concepts/domain-ontology.md
   - docs/concepts/gaps-and-reviews.md
-  - ROADMAP.md
 ---
 
 Use this page when a target-stage implementation needs a reusable target id or

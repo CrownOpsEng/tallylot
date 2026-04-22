@@ -1,14 +1,29 @@
 from __future__ import annotations
 
+from dataclasses import replace
+from decimal import Decimal
 import json
 from pathlib import Path
 
 import pytest
 
+from tallylot.application.capture_paths import (
+    checkpoint_compatibility_references_file,
+    economic_facts_compatibility_fact_annotations_file,
+    reconciliation_state_compatibility_snapshots_file,
+)
 from tallylot.application.normalization import NormalizeRequest
+from tallylot.application.normalization.contracts import NormalizeUpdateMode
 from tallylot.application.resource_refs import to_resource_ref
+from tallylot.domain.checkpoint import CheckpointAssertionTrustLevel
+from tallylot.domain.reconciliation import CheckpointProposalStatus
 from tallylot.infrastructure.serialization.csv_io import read_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.infrastructure.storage import (
+    FilesystemCheckpointRepository,
+    FilesystemEconomicFactsRepository,
+    FilesystemReconciliationStateRepository,
+)
 from repo_support.capture_roots import materialize_capture_root
 from tests.support.adapter_packs import fixture_raw_dir
 from tests.support.services import build_normalization_service
@@ -209,6 +224,782 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
     assert profile["manifest_fingerprint"] != "stale"
 
 
+def test_normalization_second_identical_run_uses_auto_mode_and_reuses_target_products(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(
+        tmp_path,
+        source="coinbase",
+        source_dir=fixture_raw_dir("coinbase", "retail_buy_renamed"),
+    )
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert second.update_mode_requested == "auto"
+    assert second.update_mode_effective == "auto"
+    assert second.reused_target_product_count > 0
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert (
+        summary["target_product_execution"]["economic_facts"]["kernel_action"]
+        == "reused"
+    )
+
+
+def test_normalization_second_identical_statement_backed_run_reuses_checkpoint_detail_outputs(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    from reportlab.pdfgen import canvas
+
+    pdf = canvas.Canvas(str(raw_dir / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert all(
+        state["snapshot_action"] == "reused"
+        for state in summary["target_product_execution"]["reconciliation_states"]
+    )
+    assert all(
+        checkpoint["reference_action"] == "reused"
+        for checkpoint in summary["target_product_execution"]["checkpoints"]
+    )
+
+
+def test_normalization_full_update_reuses_kernels_and_refreshes_detail_outputs(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(
+        tmp_path,
+        source="coinbase",
+        source_dir=fixture_raw_dir("coinbase", "retail_buy_renamed"),
+    )
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+            update_mode=NormalizeUpdateMode.FULL_UPDATE,
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert (
+        summary["target_product_execution"]["economic_facts"]["kernel_action"]
+        == "reused"
+    )
+    assert (
+        summary["target_product_execution"]["economic_facts"]["compatibility_action"]
+        == "refreshed"
+    )
+
+
+def test_normalization_rebuild_mode_rebuilds_every_stage_but_preserves_ids_on_unchanged_inputs(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(
+        tmp_path,
+        source="coinbase",
+        source_dir=fixture_raw_dir("coinbase", "retail_buy_renamed"),
+    )
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    first_summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+            update_mode=NormalizeUpdateMode.REBUILD,
+        )
+    )
+    second_summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert (
+        second_summary["target_product_execution"]["economic_facts"]["kernel_action"]
+        == "rebuilt"
+    )
+    assert (
+        second_summary["target_product_execution"]["economic_facts"]["fingerprint"]
+        == first_summary["target_product_execution"]["economic_facts"]["fingerprint"]
+    )
+
+
+def test_normalization_auto_mode_refreshes_detail_outputs_when_prior_signatures_drift(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    from reportlab.pdfgen import canvas
+
+    pdf = canvas.Canvas(str(raw_dir / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary_path = output_dir / "normalization_summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    target_product_execution = summary["target_product_execution"]
+    target_product_execution["economic_facts"]["compatibility_signature"] = (
+        "stale-compatibility-signature"
+    )
+    for state in target_product_execution["reconciliation_states"]:
+        state["snapshot_signature"] = "stale-snapshot-signature"
+    for checkpoint in target_product_execution["checkpoints"]:
+        checkpoint["reference_signature"] = "stale-reference-signature"
+    summary_path.write_text(json.dumps(summary), encoding="utf-8")
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    rerun_summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    rerun_target_product_execution = rerun_summary["target_product_execution"]
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert rerun_target_product_execution["economic_facts"]["kernel_action"] == "reused"
+    assert (
+        rerun_target_product_execution["economic_facts"]["compatibility_action"]
+        == "refreshed"
+    )
+    assert all(
+        state["kernel_action"] == "reused"
+        for state in rerun_target_product_execution["reconciliation_states"]
+    )
+    assert all(
+        state["snapshot_action"] == "refreshed"
+        for state in rerun_target_product_execution["reconciliation_states"]
+    )
+    assert all(
+        checkpoint["kernel_action"] == "reused"
+        for checkpoint in rerun_target_product_execution["checkpoints"]
+    )
+    assert all(
+        checkpoint["reference_action"] == "refreshed"
+        for checkpoint in rerun_target_product_execution["checkpoints"]
+    )
+
+
+def test_normalization_rerun_ignores_invalid_prior_target_product_summary(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(
+        tmp_path,
+        source="coinbase",
+        source_dir=fixture_raw_dir("coinbase", "retail_buy_renamed"),
+    )
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary_path = output_dir / "normalization_summary.json"
+    summary_path.write_text("{invalid-json", encoding="utf-8")
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert summary["target_product_execution"]["economic_facts"] is not None
+    assert summary["target_product_execution"]["economic_facts"]["kernel_action"] == (
+        "rebuilt"
+    )
+
+
+def test_normalization_auto_mode_refreshes_corrupted_detail_outputs(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    from reportlab.pdfgen import canvas
+
+    pdf = canvas.Canvas(str(raw_dir / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    workspace_root = tmp_path / "workspace"
+    (
+        workspace_root
+        / economic_facts_compatibility_fact_annotations_file(
+            workspace_root,
+            first.economic_facts_id,
+        ).relative_to(workspace_root)
+    ).write_text("{invalid-json", encoding="utf-8")
+    for reconciliation_state_id in first.reconciliation_state_ids:
+        (
+            workspace_root
+            / reconciliation_state_compatibility_snapshots_file(
+                workspace_root,
+                reconciliation_state_id,
+            ).relative_to(workspace_root)
+        ).write_text("not\nx\n", encoding="utf-8")
+    (
+        workspace_root
+        / checkpoint_compatibility_references_file(
+            workspace_root,
+            first.checkpoint_ids[0],
+        ).relative_to(workspace_root)
+    ).write_text("not\nx\n", encoding="utf-8")
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert summary["target_product_execution"]["economic_facts"]["kernel_action"] == (
+        "reused"
+    )
+    assert (
+        summary["target_product_execution"]["economic_facts"]["compatibility_action"]
+        == "refreshed"
+    )
+    assert all(
+        state["kernel_action"] == "reused"
+        for state in summary["target_product_execution"]["reconciliation_states"]
+    )
+    assert all(
+        state["snapshot_action"] == "refreshed"
+        for state in summary["target_product_execution"]["reconciliation_states"]
+    )
+    assert all(
+        checkpoint["kernel_action"] == "reused"
+        for checkpoint in summary["target_product_execution"]["checkpoints"]
+    )
+    assert all(
+        checkpoint["reference_action"] == "refreshed"
+        for checkpoint in summary["target_product_execution"]["checkpoints"]
+    )
+    assert json.loads(
+        (output_dir / "fact_annotations.json").read_text(encoding="utf-8")
+    )
+    assert read_rows(output_dir / "balance_snapshots.csv")
+    assert read_rows(output_dir / "balance_references.csv")
+
+
+def test_normalization_auto_mode_rebuilds_corrupted_target_kernels(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    from reportlab.pdfgen import canvas
+
+    pdf = canvas.Canvas(str(raw_dir / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    workspace_root = tmp_path / "workspace"
+    (workspace_root / first.economic_facts_ref).write_text(
+        "{invalid-json",
+        encoding="utf-8",
+    )
+    (workspace_root / first.reconciliation_state_refs[0]).write_text(
+        "{invalid-json",
+        encoding="utf-8",
+    )
+    (workspace_root / first.checkpoint_refs[0]).write_text(
+        "{invalid-json",
+        encoding="utf-8",
+    )
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert summary["target_product_execution"]["economic_facts"]["kernel_action"] == (
+        "rebuilt"
+    )
+    assert any(
+        state["kernel_action"] == "rebuilt"
+        for state in summary["target_product_execution"]["reconciliation_states"]
+    )
+    assert any(
+        checkpoint["kernel_action"] == "rebuilt"
+        for checkpoint in summary["target_product_execution"]["checkpoints"]
+    )
+    assert read_rows(output_dir / "facts.csv")
+    assert read_rows(output_dir / "balance_snapshots.csv")
+    assert read_rows(output_dir / "balance_references.csv")
+
+
+def test_normalization_auto_mode_rebuilds_semantically_drifted_target_kernels(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    from reportlab.pdfgen import canvas
+
+    pdf = canvas.Canvas(str(raw_dir / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    workspace_root = tmp_path / "workspace"
+    economic_facts_repository = FilesystemEconomicFactsRepository()
+    reconciliation_state_repository = FilesystemReconciliationStateRepository()
+    checkpoint_repository = FilesystemCheckpointRepository()
+    economic_facts_path = workspace_root / first.economic_facts_ref
+    reconciliation_state_path = workspace_root / first.reconciliation_state_refs[0]
+    checkpoint_path = workspace_root / first.checkpoint_refs[0]
+
+    economic_facts = economic_facts_repository.read_economic_facts(economic_facts_path)
+    economic_facts_repository.write_economic_facts(
+        economic_facts_path,
+        replace(
+            economic_facts,
+            economic_leg_records=(
+                replace(
+                    economic_facts.economic_leg_records[0],
+                    quantity=Decimal("0.02000000"),
+                ),
+                *economic_facts.economic_leg_records[1:],
+            ),
+        ),
+    )
+    reconciliation_state = reconciliation_state_repository.read_reconciliation_state(
+        reconciliation_state_path
+    )
+    reconciliation_state_repository.write_reconciliation_state(
+        reconciliation_state_path,
+        replace(
+            reconciliation_state,
+            checkpoint_proposal_records=(
+                replace(
+                    reconciliation_state.checkpoint_proposal_records[0],
+                    status=CheckpointProposalStatus.PARTIAL,
+                ),
+                *reconciliation_state.checkpoint_proposal_records[1:],
+            ),
+        ),
+    )
+    checkpoint = checkpoint_repository.read_checkpoint(checkpoint_path)
+    checkpoint_repository.write_checkpoint(
+        checkpoint_path,
+        replace(
+            checkpoint,
+            checkpoint_assertion_records=(
+                replace(
+                    checkpoint.checkpoint_assertion_records[0],
+                    trust_level=CheckpointAssertionTrustLevel.ANALYSIS_READY,
+                ),
+                *checkpoint.checkpoint_assertion_records[1:],
+            ),
+        ),
+    )
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert summary["target_product_execution"]["economic_facts"]["kernel_action"] == (
+        "rebuilt"
+    )
+    assert any(
+        state["kernel_action"] == "rebuilt"
+        for state in summary["target_product_execution"]["reconciliation_states"]
+    )
+    assert any(
+        checkpoint["kernel_action"] == "rebuilt"
+        for checkpoint in summary["target_product_execution"]["checkpoints"]
+    )
+    assert "0.02000000" not in json.dumps(
+        economic_facts_repository.read_economic_facts(economic_facts_path).to_payload()
+    )
+    repaired_state = reconciliation_state_repository.read_reconciliation_state(
+        reconciliation_state_path
+    )
+    assert repaired_state.checkpoint_proposal_records[0].status is not (
+        CheckpointProposalStatus.PARTIAL
+    )
+    repaired_checkpoint = checkpoint_repository.read_checkpoint(checkpoint_path)
+    assert repaired_checkpoint.checkpoint_assertion_records[0].trust_level is not (
+        CheckpointAssertionTrustLevel.ANALYSIS_READY
+    )
+
+
+def test_normalization_rerun_prunes_stale_balance_reference_issue_file_when_clean(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    output_dir = tmp_path / "normalized"
+    output_dir.mkdir()
+    (output_dir / "balance_reference_issues.csv").write_text(
+        "issue_id\nstale\n", encoding="utf-8"
+    )
+
+    build_normalization_service().execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+
+    assert not (output_dir / "balance_reference_issues.csv").exists()
+
+
+def test_normalization_rerun_prunes_stale_checkpoint_roots_when_current_run_emits_none(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    from reportlab.pdfgen import canvas
+
+    pdf = canvas.Canvas(str(raw_dir / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    output_dir = tmp_path / "normalized"
+    service = build_normalization_service()
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+
+    for pdf_path in raw_dir.glob("*.pdf"):
+        pdf_path.unlink()
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+    workspace_root = tmp_path / "workspace"
+
+    assert first.checkpoint_refs
+    assert second.checkpoint_refs == ()
+    assert not any((workspace_root / ref).exists() for ref in first.checkpoint_refs)
+    assert summary["target_product_execution"]["pruned_checkpoint_refs"] == list(
+        first.checkpoint_refs
+    )
+
+
+def test_normalization_rerun_prunes_target_products_when_target_execution_disappears(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    from reportlab.pdfgen import canvas
+
+    pdf = canvas.Canvas(str(raw_dir / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    for path in raw_dir.iterdir():
+        if path.name != "capture.json":
+            path.unlink()
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+    workspace_root = tmp_path / "workspace"
+
+    assert first.reconciliation_state_refs
+    assert first.checkpoint_refs
+    assert second.economic_facts_ref == ""
+    assert second.reconciliation_state_refs == ()
+    assert second.checkpoint_refs == ()
+    assert second.pruned_target_product_count == (
+        1 + len(first.reconciliation_state_refs) + len(first.checkpoint_refs)
+    )
+    assert not (workspace_root / first.economic_facts_ref).exists()
+    assert not any(
+        (workspace_root / ref).exists() for ref in first.reconciliation_state_refs
+    )
+    assert not any((workspace_root / ref).exists() for ref in first.checkpoint_refs)
+    assert summary["target_product_execution"]["economic_facts"] is None
+    assert summary["target_product_execution"]["reconciliation_states"] == []
+    assert summary["target_product_execution"]["checkpoints"] == []
+    assert summary["target_product_execution"][
+        "pruned_reconciliation_state_refs"
+    ] == list(first.reconciliation_state_refs)
+    assert summary["target_product_execution"]["pruned_checkpoint_refs"] == list(
+        first.checkpoint_refs
+    )
+
+
 @pytest.mark.parametrize(
     ("source", "raw_dir", "expected"),
     (
@@ -273,6 +1064,9 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
             window_end="2025-12-31 23:59:59",
         )
     )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
 
     assert response.fact_count == expected["fact_count"]
     assert response.issue_count == expected["issue_count"]
@@ -283,6 +1077,16 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
         "expects_reconciliation_states"
     ]
     assert (response.checkpoint_refs != ()) is expected["expects_checkpoints"]
+    assert "target_product_execution" in summary
+    assert (
+        summary["target_product_execution"]["economic_facts"] is not None
+    ) is expected["expects_economic_facts"]
+    assert (
+        summary["target_product_execution"]["reconciliation_states"] != []
+    ) is expected["expects_reconciliation_states"]
+    assert (summary["target_product_execution"]["checkpoints"] != []) is expected[
+        "expects_checkpoints"
+    ]
     if expected["expects_evidence_set"]:
         assert response.evidence_set_ref == (
             "working/products/evidence_sets/"

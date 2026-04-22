@@ -19,6 +19,7 @@ from tallylot.application.capture_paths import (
 from tallylot.application.normalization.contracts import (
     AssembleSourceRequest,
     NormalizeRequest,
+    NormalizeUpdateMode,
 )
 from tallylot.application.profiling.contracts import ProfileRequest
 from tallylot.application.resource_refs import to_resource_ref, to_workspace_path
@@ -89,6 +90,9 @@ def _source_normalize(
     output_dir: Annotated[
         Path | None, typer.Option(dir_okay=True, file_okay=False)
     ] = None,
+    update_mode: Annotated[NormalizeUpdateMode, typer.Option("--update-mode")] = (
+        NormalizeUpdateMode.AUTO
+    ),
     window_start: Annotated[str | None, typer.Option()] = None,
     window_end: Annotated[str | None, typer.Option()] = None,
     inspect_archives: Annotated[
@@ -102,6 +106,7 @@ def _source_normalize(
                 source=source,
                 raw_capture_ref=to_resource_ref(raw_dir),
                 normalized_output_ref=to_resource_ref(resolved_output_dir),
+                update_mode=update_mode,
                 window_start=window_start,
                 window_end=window_end,
                 inspect_archives=inspect_archives,

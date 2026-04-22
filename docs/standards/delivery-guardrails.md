@@ -48,8 +48,9 @@ when the higher-layer control is available.
   `docs/standards/commits.md`
 - active branch names, commit messages, PR titles, and PR bodies stay
   phase-free and roadmap-free because they are durable delivery metadata
-- planning and forward-looking docs may still use roadmap-owned ephemeral tags
-  where the planning surface itself owns that reference
+- planning and forward-looking docs may use ephemeral planning language when
+  they carry planning or sequencing detail; `ROADMAP.md` is not the only
+  allowed planning surface
 - pull requests open as draft by default
 - a PR becomes ready for review only after the full issue-finding hardening
   loop yields no new meaningful findings

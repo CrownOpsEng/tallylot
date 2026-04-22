@@ -9,6 +9,15 @@ milestones on `main`.
 
 ### Docs And Control Plane
 
+- Aligned the canonical accounting boundary around `application/accounting/`,
+  `domain/accounting/`, and the accounting backend seam across durable docs,
+  naming policy, and control-plane routes.
+- Added automatic deterministic fast-path reruns for planner-enabled
+  normalization, with bounded authoritative reuse, stale-output pruning, and
+  explicit `--update-mode auto|full-update|rebuild` operator controls.
+- Hardened repo-native validators, skills, commands, and durable owner docs so
+  replay validation stays developer-only proof tooling and fast-path rerun
+  guarantees fail closed when they drift.
 - Reset durable contract and sequencing authority onto the owned docs and
   removed planning-coupled semantic docs-audit proof from durable control-plane
   checks.

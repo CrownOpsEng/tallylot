@@ -30,6 +30,19 @@ not match the path and requested source.
 When the raw capture lives inside the workspace, the default output root stays
 `working/normalized/captures/<capture_uid>/`.
 
+The default `--update-mode auto` path is the ordinary operator route. It
+reuses unchanged authoritative target products, recalculates affected stages
+automatically when authoritative inputs changed, refreshes required sidecars,
+rewrites the capture-local mirror files from current authoritative truth, and
+prunes stale stage-owned outputs.
+
+Use `--update-mode full-update` when you need all current stage-owned detail
+and compatibility outputs refreshed from authoritative truth while unchanged
+kernels remain reused.
+
+Use `--update-mode rebuild` when you need to bypass fast-path reuse and rebuild
+the implemented target-product chain from declared upstream truth.
+
 Review:
 
 - `facts.csv`

@@ -342,6 +342,44 @@ def test_plan_translation_inputs_keeps_selected_order_stable_across_repeated_run
     assert first_result.plan.decisions == second_result.plan.decisions
 
 
+def test_material_input_change_changes_translation_candidate_content_fingerprint() -> (
+    None
+):
+    first = translation_input_content_fingerprint(
+        member_sha256s=("sha-one", "sha-two"),
+        family_id="family",
+        selection_group="group",
+        selection_mode=TranslationSelectionMode.REPLACEABLE_RANGE,
+    )
+    second = translation_input_content_fingerprint(
+        member_sha256s=("sha-one", "sha-three"),
+        family_id="family",
+        selection_group="group",
+        selection_mode=TranslationSelectionMode.REPLACEABLE_RANGE,
+    )
+
+    assert first != second
+
+
+def test_member_order_change_does_not_change_translation_candidate_content_fingerprint() -> (
+    None
+):
+    first = translation_input_content_fingerprint(
+        member_sha256s=("sha-one", "sha-two"),
+        family_id="family",
+        selection_group="group",
+        selection_mode=TranslationSelectionMode.REPLACEABLE_RANGE,
+    )
+    second = translation_input_content_fingerprint(
+        member_sha256s=("sha-two", "sha-one"),
+        family_id="family",
+        selection_group="group",
+        selection_mode=TranslationSelectionMode.REPLACEABLE_RANGE,
+    )
+
+    assert first == second
+
+
 def inventory_entry(relative_path: str, sha256: str) -> FileInventoryEntry:
     return FileInventoryEntry(
         relative_path=relative_path,

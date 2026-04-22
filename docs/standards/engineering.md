@@ -936,10 +936,11 @@ Rules:
   docs-maintenance-owned structure, not target-naming rules
 - required `naming_scope` frontmatter/default behavior is
   docs-maintenance-owned frontmatter validation, not target-naming drift
-- planning and forward-looking docs may use roadmap-owned ephemeral tags when
-  the planning surface itself owns that reference
+- forward-looking docs may use ephemeral planning language when they carry
+  planning or sequencing detail; `ROADMAP.md` is not the only allowed
+  planning surface
 - durable standards, control-plane, and delivery metadata surfaces must stay
-  free of roadmap-owned phase tags and other ephemeral planning labels
+  free of roadmap and phase tags plus other ephemeral planning labels
 - keep frontmatter summaries and generated `docs/README.md` blurbs
   content-first; do not lead with page-role or authority-first labels that
   foreground governance instead of the held contract

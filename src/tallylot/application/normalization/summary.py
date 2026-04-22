@@ -35,6 +35,7 @@ def build_normalization_summary(
     reconciliation_state_refs: tuple[str, ...],
     checkpoint_ids: tuple[str, ...],
     checkpoint_refs: tuple[str, ...],
+    target_product_execution: JsonValue | None = None,
 ) -> JsonValue:  # pylint: disable=too-many-arguments
     payload: dict[str, object] = {
         "source": request.source,
@@ -69,6 +70,8 @@ def build_normalization_summary(
     if str(profile.adapter_id) == "coinbase":
         payload["claim_set_id"] = claim_set_id
         payload["claim_set_ref"] = claim_set_ref
+    if target_product_execution is not None:
+        payload["target_product_execution"] = target_product_execution
     return cast(JsonValue, payload)
 
 

@@ -98,12 +98,14 @@ checkpoint rules.
 ## Contributing
 
 Use [CONTRIBUTING.md](CONTRIBUTING.md) for contributor licensing terms and
-submission rules. Use the standards docs and [ROADMAP.md](ROADMAP.md) for repo
-execution and active sequencing:
+submission rules. Use the standards docs for repo execution and the current
+runtime and operator docs for active behavior:
 
 - [docs/standards/engineering.md](docs/standards/engineering.md)
 - [docs/standards/implementation.md](docs/standards/implementation.md)
 - [docs/standards/commits.md](docs/standards/commits.md)
+- [docs/status/current-state.md](docs/status/current-state.md)
+- [docs/guides/operator-quickstart.md](docs/guides/operator-quickstart.md)
 
 External contributions are accepted only under
 [CLA.md](CLA.md), which gives the maintainer broad relicensing and commercial

@@ -22,6 +22,17 @@
   "reviews_outside_normalization_window": 0,
   "snapshot_count": 2,
   "source": "WealthSimple",
+  "target_product_execution": {
+    "checkpoints": [],
+    "claim_set_fingerprint": "",
+    "economic_facts": null,
+    "pruned_checkpoint_refs": [],
+    "pruned_reconciliation_state_refs": [],
+    "reconciliation_states": [],
+    "signature_version": "normalization-target-products-v1",
+    "update_mode_effective": "auto",
+    "update_mode_requested": "auto"
+  },
   "translation_blocked_count": 0,
   "translation_candidate_count": 0,
   "translation_planner_used": false,

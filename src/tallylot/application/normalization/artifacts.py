@@ -41,11 +41,14 @@ def write_normalization_artifacts(
         output_dir / BALANCE_REFERENCE_FILENAME,
         outputs.balance_references,
     )
+    balance_reference_issue_path = output_dir / BALANCE_REFERENCE_ISSUE_FILENAME
     if outputs.balance_reference_issues:
         evidence.write_issue_records(
-            output_dir / BALANCE_REFERENCE_ISSUE_FILENAME,
+            balance_reference_issue_path,
             outputs.balance_reference_issues,
         )
+    elif balance_reference_issue_path.exists():
+        balance_reference_issue_path.unlink()
     evidence.write_issue_records(output_dir / "exceptions.csv", outputs.issues)
     evidence.write_review_records(
         output_dir / "normalization_reviews.csv", outputs.reviews

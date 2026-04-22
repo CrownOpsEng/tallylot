@@ -10,12 +10,42 @@ Use this route for a full typed intake pass:
 6. `source manifest` for the settled capture path when you need a deterministic capture manifest
 7. `source profile`
 8. review `profile.json`, `profile_inventory.csv`, `timezone_issues.csv`
-9. `source normalize`
-10. review `facts.csv`, `exceptions.csv`, `normalization_reviews.csv`, and `normalization_summary.json`
-11. `checkpoint rebuild-location-inventory` when normalization emitted per-source location inventory rows
-12. `output render file` when the round needs an external output artifact such as `cointracking_candidate.csv`
-13. `tools.validate_workspace_replay` when you need to compare a rebuilt workspace against a reference workspace and confirm meaning parity
+9. `source normalize --update-mode auto` for the ordinary operator path
+10. use `--update-mode full-update` when you need all current stage-owned
+    detail refreshed from authoritative truth while unchanged kernels stay
+    reused
+11. use `--update-mode rebuild` when you need to bypass fast-path reuse and
+    rebuild the implemented target-product chain from declared upstream truth
+12. `source assemble` before reconciliation or downstream balance work; the
+    assembled source dataset under `working/normalized/sources/<source>/` is
+    the operator-facing handoff surface after normalization
+13. review `facts.csv`, `exceptions.csv`, `normalization_reviews.csv`, and `normalization_summary.json`
+14. confirm `normalization_summary.json` records automatic target-product execution details and the effective update mode
+15. `checkpoint extract-pdf-balances` when supported statement PDFs need the
+    standalone statement parser output that shares normalization's statement
+    extraction path
+16. `checkpoint scaffold-balance-submission` and
+    `checkpoint submit-balances` when normalization did not already emit the
+    balance outputs needed for the assembled source root
+17. `reconciliation balances check` once the assembled source root contains
+    the balance outputs needed for a deterministic source-level check
+18. `reconciliation balances inspect`, `reconciliation balances check`, and
+    `reconciliation balances summarize` when the task needs a multi-source
+    balance answer instead of a source-local one
+19. `output render file` when the round needs an external output artifact such
+    as `cointracking_candidate.csv`
+20. continue with `.claude/commands/round-verification.md` once a rendered
+    candidate must move through oracle screening, staging, or round-close
+    verification
+21. `checkpoint rebuild-location-inventory` when normalization emitted
+    per-source location inventory rows
+
+Developer-only proof tooling:
+
+- `tools.validate_workspace_replay` when you need to compare a rebuilt
+  workspace against a reference workspace and confirm meaning parity during
+  repo-side replay validation or migration proof
 
 Use `docs/guides/operator-quickstart.md` for the short operator route,
 `docs/guides/source-intake.md` for the detailed intake procedure, and
-`docs/guides/normalize-screen-stage.md` for the next stage after profiling.
+`docs/guides/normalize-screen-stage.md` for the next stage after normalization.

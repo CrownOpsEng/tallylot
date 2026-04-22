@@ -7,11 +7,13 @@ from typing import Protocol, cast
 import pytest
 from typer.testing import CliRunner
 
+from tallylot.application.normalization.contracts import NormalizeUpdateMode
 from tallylot.application.capture_paths import source_assembled_root
 from tallylot.domain.types import WorkspacePath
 from tallylot.interfaces.cli import app
 from tallylot.interfaces.cli import checkpoint as cli_checkpoint
 from tallylot.interfaces.cli import reconciliation as cli_reconciliation
+from tallylot.interfaces.cli import source as cli_source
 from tallylot.interfaces.cli import workspace as cli_workspace
 
 runner = CliRunner()
@@ -44,6 +46,17 @@ class HasSubmitBalancesRefs(Protocol):
     source: str
     submission_root_ref: str
     output_root_ref: str
+
+
+class HasNormalizeRefs(Protocol):
+    source: str
+    raw_capture_ref: str
+    normalized_output_ref: str
+    update_mode: str
+
+
+def _emit_response_noop(payload: object) -> None:
+    del payload
 
 
 def test_cli_registers_current_command_groups() -> None:
@@ -95,6 +108,179 @@ def test_workspace_init_uses_configured_root_when_option_is_omitted(
 
     assert result.exit_code == 0
     assert seen["workspace_root"] == str(configured_root)
+
+
+def test_source_normalize_cli_defaults_update_mode_to_auto(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    seen: dict[str, object] = {}
+
+    class StubNormalizeUseCase:
+        def execute(self, request: object) -> object:
+            seen["request"] = request
+            return SimpleNamespace(
+                normalized_output_ref=str(tmp_path / "normalized"),
+                adapter_id="coinbase",
+                evidence_set_id="",
+                evidence_set_ref="",
+                claim_set_id="",
+                claim_set_ref="",
+                economic_facts_id="",
+                economic_facts_ref="",
+                reconciliation_state_ids=(),
+                reconciliation_state_refs=(),
+                checkpoint_ids=(),
+                checkpoint_refs=(),
+                update_mode_requested="auto",
+                update_mode_effective="auto",
+                reused_target_product_count=0,
+                rebuilt_target_product_count=0,
+                pruned_target_product_count=0,
+                refreshed_detail_output_count=0,
+                fact_count=0,
+                balance_count=0,
+                issue_count=0,
+                review_count=0,
+                translation_candidate_count=0,
+                translation_selected_count=0,
+                translation_superseded_count=0,
+                translation_blocked_count=0,
+                translation_planner_used=False,
+            )
+
+    monkeypatch.setattr(
+        cli_source, "normalize_source_use_case", lambda: StubNormalizeUseCase()
+    )
+    monkeypatch.setattr(cli_source, "emit_response", _emit_response_noop)
+
+    cli_source._source_normalize(
+        source="coinbase",
+        raw_dir=raw_dir,
+        output_dir=tmp_path / "normalized",
+    )
+
+    request = cast(HasNormalizeRefs, seen["request"])
+
+    assert request.update_mode == "auto"
+
+
+def test_source_normalize_cli_passes_full_update_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    seen: dict[str, object] = {}
+
+    class StubNormalizeUseCase:
+        def execute(self, request: object) -> object:
+            seen["request"] = request
+            return SimpleNamespace(
+                normalized_output_ref=str(tmp_path / "normalized"),
+                adapter_id="coinbase",
+                evidence_set_id="",
+                evidence_set_ref="",
+                claim_set_id="",
+                claim_set_ref="",
+                economic_facts_id="",
+                economic_facts_ref="",
+                reconciliation_state_ids=(),
+                reconciliation_state_refs=(),
+                checkpoint_ids=(),
+                checkpoint_refs=(),
+                update_mode_requested="full-update",
+                update_mode_effective="full-update",
+                reused_target_product_count=0,
+                rebuilt_target_product_count=0,
+                pruned_target_product_count=0,
+                refreshed_detail_output_count=0,
+                fact_count=0,
+                balance_count=0,
+                issue_count=0,
+                review_count=0,
+                translation_candidate_count=0,
+                translation_selected_count=0,
+                translation_superseded_count=0,
+                translation_blocked_count=0,
+                translation_planner_used=False,
+            )
+
+    monkeypatch.setattr(
+        cli_source, "normalize_source_use_case", lambda: StubNormalizeUseCase()
+    )
+    monkeypatch.setattr(cli_source, "emit_response", _emit_response_noop)
+
+    cli_source._source_normalize(
+        source="coinbase",
+        raw_dir=raw_dir,
+        output_dir=tmp_path / "normalized",
+        update_mode=NormalizeUpdateMode.FULL_UPDATE,
+    )
+
+    request = cast(HasNormalizeRefs, seen["request"])
+
+    assert request.update_mode == "full-update"
+
+
+def test_source_normalize_cli_passes_rebuild_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    seen: dict[str, object] = {}
+
+    class StubNormalizeUseCase:
+        def execute(self, request: object) -> object:
+            seen["request"] = request
+            return SimpleNamespace(
+                normalized_output_ref=str(tmp_path / "normalized"),
+                adapter_id="coinbase",
+                evidence_set_id="",
+                evidence_set_ref="",
+                claim_set_id="",
+                claim_set_ref="",
+                economic_facts_id="",
+                economic_facts_ref="",
+                reconciliation_state_ids=(),
+                reconciliation_state_refs=(),
+                checkpoint_ids=(),
+                checkpoint_refs=(),
+                update_mode_requested="rebuild",
+                update_mode_effective="rebuild",
+                reused_target_product_count=0,
+                rebuilt_target_product_count=0,
+                pruned_target_product_count=0,
+                refreshed_detail_output_count=0,
+                fact_count=0,
+                balance_count=0,
+                issue_count=0,
+                review_count=0,
+                translation_candidate_count=0,
+                translation_selected_count=0,
+                translation_superseded_count=0,
+                translation_blocked_count=0,
+                translation_planner_used=False,
+            )
+
+    monkeypatch.setattr(
+        cli_source, "normalize_source_use_case", lambda: StubNormalizeUseCase()
+    )
+    monkeypatch.setattr(cli_source, "emit_response", _emit_response_noop)
+
+    cli_source._source_normalize(
+        source="coinbase",
+        raw_dir=raw_dir,
+        output_dir=tmp_path / "normalized",
+        update_mode=NormalizeUpdateMode.REBUILD,
+    )
+
+    request = cast(HasNormalizeRefs, seen["request"])
+
+    assert request.update_mode == "rebuild"
 
 
 def test_checkpoint_submit_balances_uses_source_assembled_root_when_output_omitted(
