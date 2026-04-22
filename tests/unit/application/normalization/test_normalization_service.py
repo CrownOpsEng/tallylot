@@ -5,6 +5,11 @@ from pathlib import Path
 
 import pytest
 
+from tallylot.application.capture_paths import (
+    checkpoint_compatibility_references_file,
+    economic_facts_compatibility_fact_annotations_file,
+    reconciliation_state_compatibility_snapshots_file,
+)
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.normalization.contracts import NormalizeUpdateMode
 from tallylot.application.resource_refs import to_resource_ref
@@ -515,6 +520,110 @@ def test_normalization_rerun_ignores_invalid_prior_target_product_summary(
     assert summary["target_product_execution"]["economic_facts"]["kernel_action"] == (
         "rebuilt"
     )
+
+
+def test_normalization_auto_mode_refreshes_corrupted_detail_outputs(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+    from reportlab.pdfgen import canvas
+
+    pdf = canvas.Canvas(str(raw_dir / "2026-03-23 - transaction-history.pdf"))
+    pdf.drawString(72, 750, "Coinbase Canada, Inc.")
+    pdf.drawString(72, 735, "Transaction History Report")
+    pdf.drawString(72, 720, "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD")
+    pdf.drawString(
+        72,
+        705,
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+    )
+    pdf.drawString(72, 690, "BTC 0.01000000 N/A 60,000.00 CAD/BTC 600.00 CAD")
+    pdf.save()
+    service = build_normalization_service()
+    output_dir = tmp_path / "normalized"
+
+    first = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    workspace_root = tmp_path / "workspace"
+    (
+        workspace_root
+        / economic_facts_compatibility_fact_annotations_file(
+            workspace_root,
+            first.economic_facts_id,
+        ).relative_to(workspace_root)
+    ).write_text("{invalid-json", encoding="utf-8")
+    for reconciliation_state_id in first.reconciliation_state_ids:
+        (
+            workspace_root
+            / reconciliation_state_compatibility_snapshots_file(
+                workspace_root,
+                reconciliation_state_id,
+            ).relative_to(workspace_root)
+        ).write_text("not\nx\n", encoding="utf-8")
+    (
+        workspace_root
+        / checkpoint_compatibility_references_file(
+            workspace_root,
+            first.checkpoint_ids[0],
+        ).relative_to(workspace_root)
+    ).write_text("not\nx\n", encoding="utf-8")
+
+    second = service.execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert second.economic_facts_ref == first.economic_facts_ref
+    assert second.reconciliation_state_refs == first.reconciliation_state_refs
+    assert second.checkpoint_refs == first.checkpoint_refs
+    assert summary["target_product_execution"]["economic_facts"]["kernel_action"] == (
+        "reused"
+    )
+    assert (
+        summary["target_product_execution"]["economic_facts"]["compatibility_action"]
+        == "refreshed"
+    )
+    assert all(
+        state["kernel_action"] == "reused"
+        for state in summary["target_product_execution"]["reconciliation_states"]
+    )
+    assert all(
+        state["snapshot_action"] == "refreshed"
+        for state in summary["target_product_execution"]["reconciliation_states"]
+    )
+    assert all(
+        checkpoint["kernel_action"] == "reused"
+        for checkpoint in summary["target_product_execution"]["checkpoints"]
+    )
+    assert all(
+        checkpoint["reference_action"] == "refreshed"
+        for checkpoint in summary["target_product_execution"]["checkpoints"]
+    )
+    assert json.loads(
+        (output_dir / "fact_annotations.json").read_text(encoding="utf-8")
+    )
+    assert read_rows(output_dir / "balance_snapshots.csv")
+    assert read_rows(output_dir / "balance_references.csv")
 
 
 def test_normalization_rerun_prunes_stale_balance_reference_issue_file_when_clean(

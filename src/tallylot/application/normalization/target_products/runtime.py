@@ -21,14 +21,9 @@ from tallylot.application.capture_paths import (
 from tallylot.application.checkpoint import build_checkpoints
 from tallylot.application.compatibility.checkpoints import (
     observation_details_from_evidence_set,
-    project_balance_references_from_checkpoint,
 )
 from tallylot.application.compatibility.economic_facts import (
     EconomicFactsCompatibilityArtifacts,
-    project_compatibility_artifacts_from_economic_facts,
-)
-from tallylot.application.compatibility.reconciliation_states import (
-    project_balance_snapshots_from_reconciliation_state,
 )
 from tallylot.application.economics import build_economic_facts
 from tallylot.application.normalization.contracts import NormalizeUpdateMode
@@ -56,6 +51,12 @@ from .models import (
     ReconciliationStateExecutionDecision,
     TargetProductExecutionPlan,
     TargetProductStageAction,
+)
+from .detail_outputs import (
+    DETAIL_READ_EXCEPTIONS,
+    refresh_checkpoint_references,
+    refresh_economic_facts_compatibility,
+    refresh_reconciliation_state_snapshots,
 )
 from .planning import decide_detail_action, decide_kernel_action
 from .payloads import read_fact_annotations
@@ -201,27 +202,27 @@ def resolve_economic_facts(
         detail_paths=(compatibility_fact_path, compatibility_annotation_path),
     )
     if compatibility_action is TargetProductStageAction.REFRESHED:
-        compatibility = project_compatibility_artifacts_from_economic_facts(
+        compatibility = refresh_economic_facts_compatibility(
+            request=request,
             economic_facts=economic_facts,
-            claim_set=request.claim_set,
-            evidence_set=request.evidence_set,
-            draft_projection_field_records=request.translation_result.draft_projection_field_records,
+            facts_path=compatibility_fact_path,
+            annotations_path=compatibility_annotation_path,
         )
-        request.dependencies.facts.write_facts(
-            compatibility_fact_path,
-            compatibility.facts,
-        )
-        request.dependencies.artifacts.write_json(
-            compatibility_annotation_path,
-            [record.to_json() for record in compatibility.fact_annotations],
-        )
-        compatibility_signature = current_compatibility_signature
     else:
-        compatibility = EconomicFactsCompatibilityArtifacts(
-            facts=request.dependencies.facts.read_facts(compatibility_fact_path),
-            fact_annotations=read_fact_annotations(compatibility_annotation_path),
-        )
-        compatibility_signature = current_compatibility_signature
+        try:
+            compatibility = EconomicFactsCompatibilityArtifacts(
+                facts=request.dependencies.facts.read_facts(compatibility_fact_path),
+                fact_annotations=read_fact_annotations(compatibility_annotation_path),
+            )
+        except DETAIL_READ_EXCEPTIONS:
+            compatibility_action = TargetProductStageAction.REFRESHED
+            compatibility = refresh_economic_facts_compatibility(
+                request=request,
+                economic_facts=economic_facts,
+                facts_path=compatibility_fact_path,
+                annotations_path=compatibility_annotation_path,
+            )
+    compatibility_signature = current_compatibility_signature
     return (
         economic_facts,
         EconomicFactsExecutionDecision(
@@ -315,19 +316,24 @@ def resolve_reconciliation_states(
             detail_paths=(snapshot_path,),
         )
         if snapshot_action is TargetProductStageAction.REFRESHED:
-            projected_snapshots = project_balance_snapshots_from_reconciliation_state(
-                state
+            projected_snapshots = refresh_reconciliation_state_snapshots(
+                request=request,
+                state=state,
+                snapshot_path=snapshot_path,
             )
-            request.dependencies.evidence.write_balance_snapshots(
-                snapshot_path,
-                projected_snapshots,
-            )
-            snapshot_signature = current_snapshot_signature
         else:
-            projected_snapshots = request.dependencies.evidence.read_balance_snapshots(
-                snapshot_path
-            )
-            snapshot_signature = current_snapshot_signature
+            try:
+                projected_snapshots = (
+                    request.dependencies.evidence.read_balance_snapshots(snapshot_path)
+                )
+            except DETAIL_READ_EXCEPTIONS:
+                snapshot_action = TargetProductStageAction.REFRESHED
+                projected_snapshots = refresh_reconciliation_state_snapshots(
+                    request=request,
+                    state=state,
+                    snapshot_path=snapshot_path,
+                )
+        snapshot_signature = current_snapshot_signature
         snapshot_rows.extend(projected_snapshots)
         decisions.append(
             ReconciliationStateExecutionDecision(
@@ -423,21 +429,28 @@ def resolve_checkpoints(
             detail_paths=(reference_path,),
         )
         if reference_action is TargetProductStageAction.REFRESHED:
-            projected_references = project_balance_references_from_checkpoint(
+            projected_references = refresh_checkpoint_references(
+                request=request,
                 checkpoint=checkpoint,
-                reconciliation_states=request.reconciliation_states,
                 observation_details=observation_details,
+                reference_path=reference_path,
             )
-            request.dependencies.evidence.write_balance_references(
-                reference_path,
-                projected_references,
-            )
-            reference_signature = current_reference_signature
         else:
-            projected_references = (
-                request.dependencies.evidence.read_balance_references(reference_path)
-            )
-            reference_signature = current_reference_signature
+            try:
+                projected_references = (
+                    request.dependencies.evidence.read_balance_references(
+                        reference_path
+                    )
+                )
+            except DETAIL_READ_EXCEPTIONS:
+                reference_action = TargetProductStageAction.REFRESHED
+                projected_references = refresh_checkpoint_references(
+                    request=request,
+                    checkpoint=checkpoint,
+                    observation_details=observation_details,
+                    reference_path=reference_path,
+                )
+        reference_signature = current_reference_signature
         reference_rows.extend(projected_references)
         decisions.append(
             CheckpointExecutionDecision(
