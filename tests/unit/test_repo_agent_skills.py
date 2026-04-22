@@ -77,6 +77,8 @@ EXPECTED_SKILLS = {
             "verification inventory or TDD-first tests",
             "bounded checkpoint commits",
             "assumptions or defaults",
+            "forward-looking docs may use ephemeral planning language",
+            "`ROADMAP.md` is not the only allowed planning surface",
             "Keep the plan compaction-safe",
             "concrete file paths, commands, and",
             "avoid duplicating execution details",

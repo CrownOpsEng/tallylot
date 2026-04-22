@@ -28,10 +28,10 @@ execution off to `docs-authoring`, `implementation-workflow`, `pr-review`, or
 2. Confirm the planning surface, the owning execution workflow, and whether the
    task actually needs roadmap, migration, architecture, or area-specific docs
    before loading more context.
-3. Keep durable surfaces phase-free and roadmap-free. Planning docs and other
-   forward-looking planning surfaces may use ephemeral planning language when
-   the surface itself is a planning document; `ROADMAP.md` is not the only
-   allowed planning surface.
+3. Keep durable surfaces phase-free and roadmap-free. Planning and
+   forward-looking docs may use ephemeral planning language when they carry
+   planning, sequencing, or other future-oriented implementation detail;
+   `ROADMAP.md` is not the only allowed planning surface.
 4. Keep live docs enforcement in the owning script. Use synthetic strings or
    temp repos for docs-tooling tests instead of turning pytest into the live-
    repo docs-policy gate.
