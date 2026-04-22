@@ -178,6 +178,45 @@ def test_auto_mode_downgrades_reuse_to_rebuild_when_persisted_file_is_missing(
     assert plan.economic_facts.kernel_action is TargetProductStageAction.REBUILT
 
 
+def test_auto_mode_downgrades_reuse_to_rebuild_when_persisted_kernel_is_invalid(
+    tmp_path: Path,
+) -> None:
+    kernel_path = tmp_path / "facts.json"
+    _touch(kernel_path)
+    summary_path = tmp_path / "normalization_summary.json"
+    _write_summary(
+        summary_path,
+        economic_facts={
+            "economic_facts_id": "facts-1",
+            "economic_facts_ref": "facts.json",
+            "fingerprint": "facts-fingerprint",
+            "kernel_action": "rebuilt",
+            "compatibility_action": "refreshed",
+            "compatibility_signature": "compatibility-signature",
+        },
+    )
+
+    plan = _plan_execution(
+        summary_path=summary_path,
+        update_mode=NormalizeUpdateMode.AUTO,
+        claim_set_fingerprint="claim-set-fingerprint",
+        economic_facts=EconomicFactsExecutionCandidate(
+            economic_facts_id="facts-1",
+            economic_facts_ref="facts.json",
+            fingerprint="facts-fingerprint",
+            compatibility_signature="compatibility-signature",
+            kernel_path=kernel_path,
+            kernel_valid=False,
+            detail_paths=(),
+        ),
+        reconciliation_states=(),
+        checkpoints=(),
+    )
+
+    assert plan.economic_facts is not None
+    assert plan.economic_facts.kernel_action is TargetProductStageAction.REBUILT
+
+
 def test_full_update_reuses_kernel_but_marks_detail_outputs_for_refresh(
     tmp_path: Path,
 ) -> None:
@@ -219,6 +258,98 @@ def test_full_update_reuses_kernel_but_marks_detail_outputs_for_refresh(
     assert (
         plan.economic_facts.compatibility_action is TargetProductStageAction.REFRESHED
     )
+
+
+def test_repair_only_kernel_rebuild_does_not_force_unchanged_downstream_rebuilds(
+    tmp_path: Path,
+) -> None:
+    facts_kernel = tmp_path / "facts.json"
+    state_kernel = tmp_path / "state.json"
+    state_detail = tmp_path / "snapshots.csv"
+    checkpoint_kernel = tmp_path / "checkpoint.json"
+    checkpoint_detail = tmp_path / "references.csv"
+    for path in (
+        facts_kernel,
+        state_kernel,
+        state_detail,
+        checkpoint_kernel,
+        checkpoint_detail,
+    ):
+        _touch(path)
+    summary_path = tmp_path / "normalization_summary.json"
+    _write_summary(
+        summary_path,
+        economic_facts={
+            "economic_facts_id": "facts-1",
+            "economic_facts_ref": "facts.json",
+            "fingerprint": "facts-fingerprint",
+            "kernel_action": "rebuilt",
+            "compatibility_action": "refreshed",
+            "compatibility_signature": "compatibility-signature",
+        },
+        reconciliation_states=[
+            {
+                "reconciliation_state_id": "state-1",
+                "reconciliation_state_ref": "state.json",
+                "fingerprint": "state-fingerprint",
+                "kernel_action": "rebuilt",
+                "snapshot_action": "refreshed",
+                "snapshot_signature": "snapshot-signature",
+            }
+        ],
+        checkpoints=[
+            {
+                "checkpoint_id": "checkpoint-1",
+                "checkpoint_ref": "checkpoint.json",
+                "fingerprint": "checkpoint-fingerprint",
+                "kernel_action": "rebuilt",
+                "reference_action": "refreshed",
+                "reference_signature": "reference-signature",
+            }
+        ],
+    )
+
+    plan = _plan_execution(
+        summary_path=summary_path,
+        update_mode=NormalizeUpdateMode.AUTO,
+        claim_set_fingerprint="claim-set-fingerprint",
+        economic_facts=EconomicFactsExecutionCandidate(
+            economic_facts_id="facts-1",
+            economic_facts_ref="facts.json",
+            fingerprint="facts-fingerprint",
+            compatibility_signature="compatibility-signature",
+            kernel_path=facts_kernel,
+            kernel_valid=False,
+            detail_paths=(),
+        ),
+        reconciliation_states=(
+            ReconciliationStateExecutionCandidate(
+                reconciliation_state_id="state-1",
+                reconciliation_state_ref="state.json",
+                fingerprint="state-fingerprint",
+                snapshot_signature="snapshot-signature",
+                kernel_path=state_kernel,
+                detail_paths=(state_detail,),
+            ),
+        ),
+        checkpoints=(
+            CheckpointExecutionCandidate(
+                checkpoint_id="checkpoint-1",
+                checkpoint_ref="checkpoint.json",
+                fingerprint="checkpoint-fingerprint",
+                reference_signature="reference-signature",
+                kernel_path=checkpoint_kernel,
+                detail_paths=(checkpoint_detail,),
+            ),
+        ),
+    )
+
+    assert plan.economic_facts is not None
+    assert plan.economic_facts.kernel_action is TargetProductStageAction.REBUILT
+    assert (
+        plan.reconciliation_states[0].kernel_action is TargetProductStageAction.REUSED
+    )
+    assert plan.checkpoints[0].kernel_action is TargetProductStageAction.REUSED
 
 
 def test_rebuild_mode_marks_all_authoritative_and_detail_stages_for_rebuild(

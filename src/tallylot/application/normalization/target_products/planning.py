@@ -57,6 +57,10 @@ def plan_target_product_execution(
     request: TargetProductExecutionPlanningRequest,
 ) -> TargetProductExecutionPlan:
     prior_plan = load_prior_target_product_execution(request.summary_path)
+    economic_facts_changed = _economic_facts_changed(
+        prior_plan=prior_plan,
+        current=request.economic_facts,
+    )
     economic_facts_decision = _plan_economic_facts(
         update_mode=request.update_mode,
         prior_plan=prior_plan,
@@ -66,20 +70,17 @@ def plan_target_product_execution(
         update_mode=request.update_mode,
         prior_plan=prior_plan,
         current=request.reconciliation_states,
-        upstream_rebuilt=(
-            economic_facts_decision is not None
-            and economic_facts_decision.kernel_action
-            is TargetProductStageAction.REBUILT
-        ),
+        upstream_changed=economic_facts_changed,
+    )
+    reconciliation_states_changed = _reconciliation_states_changed(
+        prior_plan=prior_plan,
+        current=reconciliation_state_decisions,
     )
     checkpoint_decisions = _plan_checkpoints(
         update_mode=request.update_mode,
         prior_plan=prior_plan,
         current=request.checkpoints,
-        upstream_rebuilt=any(
-            decision.kernel_action is TargetProductStageAction.REBUILT
-            for decision in reconciliation_state_decisions
-        ),
+        upstream_changed=reconciliation_states_changed,
     )
     current_reconciliation_refs = {
         decision.reconciliation_state_ref for decision in reconciliation_state_decisions
@@ -160,8 +161,8 @@ def _plan_economic_facts(
         update_mode=update_mode,
         prior_fingerprint=None if prior is None else prior.fingerprint,
         current_fingerprint=current.fingerprint,
-        kernel_exists=current.kernel_path.is_file(),
-        upstream_rebuilt=False,
+        kernel_reusable=current.kernel_valid and current.kernel_path.is_file(),
+        upstream_changed=False,
     )
     compatibility_action = decide_detail_action(
         update_mode=update_mode,
@@ -185,7 +186,7 @@ def _plan_reconciliation_states(
     update_mode: NormalizeUpdateMode,
     prior_plan: TargetProductExecutionPlan | None,
     current: tuple[ReconciliationStateExecutionCandidate, ...],
-    upstream_rebuilt: bool,
+    upstream_changed: bool,
 ) -> tuple[ReconciliationStateExecutionDecision, ...]:
     prior_by_ref = {
         decision.reconciliation_state_ref: decision
@@ -198,8 +199,10 @@ def _plan_reconciliation_states(
             update_mode=update_mode,
             prior_fingerprint=None if prior is None else prior.fingerprint,
             current_fingerprint=candidate.fingerprint,
-            kernel_exists=candidate.kernel_path.is_file(),
-            upstream_rebuilt=upstream_rebuilt,
+            kernel_reusable=(
+                candidate.kernel_valid and candidate.kernel_path.is_file()
+            ),
+            upstream_changed=upstream_changed,
         )
         snapshot_action = decide_detail_action(
             update_mode=update_mode,
@@ -226,7 +229,7 @@ def _plan_checkpoints(
     update_mode: NormalizeUpdateMode,
     prior_plan: TargetProductExecutionPlan | None,
     current: tuple[CheckpointExecutionCandidate, ...],
-    upstream_rebuilt: bool,
+    upstream_changed: bool,
 ) -> tuple[CheckpointExecutionDecision, ...]:
     prior_by_ref = {
         decision.checkpoint_ref: decision
@@ -239,8 +242,10 @@ def _plan_checkpoints(
             update_mode=update_mode,
             prior_fingerprint=None if prior is None else prior.fingerprint,
             current_fingerprint=candidate.fingerprint,
-            kernel_exists=candidate.kernel_path.is_file(),
-            upstream_rebuilt=upstream_rebuilt,
+            kernel_reusable=(
+                candidate.kernel_valid and candidate.kernel_path.is_file()
+            ),
+            upstream_changed=upstream_changed,
         )
         reference_action = decide_detail_action(
             update_mode=update_mode,
@@ -267,18 +272,56 @@ def decide_kernel_action(
     update_mode: NormalizeUpdateMode,
     prior_fingerprint: str | None,
     current_fingerprint: str,
-    kernel_exists: bool,
-    upstream_rebuilt: bool,
+    kernel_reusable: bool,
+    upstream_changed: bool,
 ) -> TargetProductStageAction:
     if update_mode is NormalizeUpdateMode.REBUILD:
         return TargetProductStageAction.REBUILT
     if (
-        upstream_rebuilt
-        or not kernel_exists
+        upstream_changed
+        or not kernel_reusable
         or prior_fingerprint != current_fingerprint
     ):
         return TargetProductStageAction.REBUILT
     return TargetProductStageAction.REUSED
+
+
+def _economic_facts_changed(
+    *,
+    prior_plan: TargetProductExecutionPlan | None,
+    current: EconomicFactsExecutionCandidate | None,
+) -> bool:
+    if current is None:
+        return prior_plan is not None and prior_plan.economic_facts is not None
+    prior = prior_plan.economic_facts if prior_plan is not None else None
+    return (
+        prior is None
+        or prior.economic_facts_ref != current.economic_facts_ref
+        or prior.fingerprint != current.fingerprint
+    )
+
+
+def _reconciliation_states_changed(
+    *,
+    prior_plan: TargetProductExecutionPlan | None,
+    current: tuple[ReconciliationStateExecutionDecision, ...],
+) -> bool:
+    prior_states = () if prior_plan is None else prior_plan.reconciliation_states
+    if len(prior_states) != len(current):
+        return True
+    prior_by_ref = {
+        decision.reconciliation_state_ref: decision for decision in prior_states
+    }
+    current_refs = {decision.reconciliation_state_ref for decision in current}
+    if current_refs != set(prior_by_ref):
+        return True
+    return any(
+        (
+            prior_by_ref[decision.reconciliation_state_ref].fingerprint
+            != decision.fingerprint
+        )
+        for decision in current
+    )
 
 
 def decide_detail_action(

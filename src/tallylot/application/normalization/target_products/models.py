@@ -25,6 +25,7 @@ class EconomicFactsExecutionCandidate:
     compatibility_signature: str
     kernel_path: Path
     detail_paths: tuple[Path, ...]
+    kernel_valid: bool = True
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,7 @@ class ReconciliationStateExecutionCandidate:
     snapshot_signature: str
     kernel_path: Path
     detail_paths: tuple[Path, ...]
+    kernel_valid: bool = True
 
 
 @dataclass(frozen=True)
@@ -45,6 +47,7 @@ class CheckpointExecutionCandidate:
     reference_signature: str
     kernel_path: Path
     detail_paths: tuple[Path, ...]
+    kernel_valid: bool = True
 
 
 @dataclass(frozen=True)

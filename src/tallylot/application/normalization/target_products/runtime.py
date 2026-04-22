@@ -147,11 +147,11 @@ def resolve_economic_facts(
             else prior_economic_facts.fingerprint
         ),
         current_fingerprint=current_fingerprint,
-        kernel_exists=(
+        kernel_reusable=(
             (request.workspace_root / economic_facts_ref_value).is_file()
             and not existing_kernel_invalid
         ),
-        upstream_rebuilt=False,
+        upstream_changed=False,
     )
     if kernel_action is TargetProductStageAction.REBUILT:
         assert kernel_resolution.built_current_kernel is True
@@ -275,11 +275,11 @@ def resolve_reconciliation_states(
                 else prior_state.fingerprint
             ),
             current_fingerprint=current_fingerprint,
-            kernel_exists=(
+            kernel_reusable=(
                 state_path.is_file()
                 and state_ref_value not in validation_state.invalid_refs
             ),
-            upstream_rebuilt=False,
+            upstream_changed=False,
         )
         if kernel_action is TargetProductStageAction.REBUILT:
             request.dependencies.reconciliation_states.write_reconciliation_state(
@@ -383,11 +383,11 @@ def resolve_checkpoints(
                 else prior_checkpoint.fingerprint
             ),
             current_fingerprint=current_fingerprint,
-            kernel_exists=(
+            kernel_reusable=(
                 checkpoint_path.is_file()
                 and checkpoint_ref_value not in validation_state.invalid_refs
             ),
-            upstream_rebuilt=False,
+            upstream_changed=False,
         )
         if kernel_action is TargetProductStageAction.REBUILT:
             request.dependencies.checkpoints.write_checkpoint(
